@@ -4,7 +4,10 @@ services:
   dfx-replica:
     # --- PERBAIKAN ---
     # Menggunakan nama image SDK resmi yang benar
-    image: dfinity/sdk
+    build:
+      context: .
+      dockerfile: Dockerfile.dfx
+
     container_name: aegis-dfx-replica
     ports:
       - "4943:4943" # Port standar dfx yang baru
