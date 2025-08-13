@@ -1,0 +1,69 @@
+# docker-compose.yml (Versi yang sudah diperbaiki dan disempurnakan)
+services:
+  # Layanan ini akan memulai replika ICP dan men-deploy canister
+  dfx-replica:
+    # --- PERBAIKAN ---
+    # Menggunakan nama image SDK resmi yang benar
+    image: dfinity/sdk
+    container_name: aegis-dfx-replica
+    ports:
+      - "4943:4943" # Port standar dfx yang baru
+    working_dir: /work
+    volumes:
+      # Menghubungkan folder proyek Anda ke dalam container
+      - ./packages/execlayer_icp:/work
+    # Perintah ini akan memulai replika, menunggu, lalu men-deploy
+    command: >
+      sh -c "
+        dfx start --background --clean --host 0.0.0.0:4943 && 
+        sleep 10 && 
+        dfx deploy && 
+        tail -f /dev/null
+      "
+
+  # Layanan untuk menjalankan Oracle Agent
+  oracle-agent:
+    build:
+      context: ./packages/AI_fetchai
+      dockerfile: Dockerfile
+    container_name: aegis-oracle-agent
+    command: python agents/oracle_agent.py
+    ports:
+      - "8001:8001"
+    depends_on:
+      - dfx-replica
+    restart: on-failure
+
+  # Layanan untuk menjalankan Validator Agent
+  validator-agent:
+    build:
+      context: ./packages/AI_fetchai
+      dockerfile: Dockerfile
+    container_name: aegis-validator-agent
+    command: python agents/validator_agent.py
+    ports:
+      - "8002:8002"
+    depends_on:
+      - dfx-replica
+    restart: on-failure
+
+  # Layanan untuk menjalankan Action Agent
+  action-agent:
+    build:
+      context: ./packages/AI_fetchai
+      dockerfile: Dockerfile
+    container_name: aegis-action-agent
+    command: python agents/action_agent.py
+    ports:
+      - "8003:8003"
+    environment:
+      # Variabel ini akan diisi setelah dfx deploy selesai
+      - EVENT_FACTORY_CANISTER_ID=${EVENT_FACTORY_CANISTER_ID}
+      # Mengubah URL ICP untuk menunjuk ke layanan Docker
+      - ICP_URL=http://dfx-replica:4943
+    volumes:
+      - ./packages/AI_fetchai/identity.pem:/app/identity.pem
+      - ./packages/execlayer_icp/canister_ids.json:/app/canister_ids.json
+    depends_on:
+      - dfx-replica
+    restart: on-failure
