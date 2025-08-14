@@ -92,9 +92,8 @@ docker-compose build dfx-replica
 docker-compose up --build
 ```
 
- 
 ## 📂 Struktur Proyek
-
+ 
 aegis-protocol/
 ├── .gitignore           # Mengabaikan file yang tidak perlu (build artifacts, .env, .pem, dll.)
 ├── README.md            # Dokumentasi utama: cara instalasi, setup, dan menjalankan setiap layanan.
