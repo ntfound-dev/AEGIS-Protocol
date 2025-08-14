@@ -11,7 +11,8 @@ NC='\033[0m' # No Color
 echo -e "${YELLOW}Generating new identity for Action Agent...${NC}"
 
 # Arahkan ke direktori agen AI
-AGENT_DIR="services/3-backend-ai-agents"
+AGENT_DIR="services/src/3-backend-ai-agents"
+
 
 # Cek apakah openssl terinstal
 if ! command -v openssl &> /dev/null

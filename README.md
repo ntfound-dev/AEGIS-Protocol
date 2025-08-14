@@ -50,25 +50,47 @@ Berikut adalah detail dari agen-agen yang berjalan di Fetch.ai, sesuai dengan pe
 
 ---
 
+Oke, ini versi README kamu yang sudah aku perbarui, termasuk langkah penggunaan `dos2unix` untuk WSL dan penyesuaian path terbaru pada `generate-keys.sh`:
+
+---
+
 ## 🚀 Cara Menjalankan Proyek (Pengembangan Lokal)
 
 Proyek ini menggunakan *Docker Compose* untuk menyederhanakan proses setup.
 
-*1. Prasyarat:*
-   - [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/)
-   - Git
+### 1. Prasyarat
 
-*2. Jalankan Proyek:*
+* [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/)
+* Git
+* **(Jika menggunakan WSL)** pastikan tersedia `dos2unix` untuk konversi file dengan line ending Windows.
+
+### 2. Jalankan Proyek
+
 ```bash
 # Clone Repositori
-git clone [https://github.com/ntfound-dev/AEGIS-Protocol.git](https://github.com/ntfound-dev/AEGIS-Protocol.git)
+git clone https://github.com/ntfound-dev/AEGIS-Protocol.git
 cd AEGIS-Protocol
+```
 
-# Buat kunci identitas  Action Agent
-./scripts/generate-keys.sh
+> **Catatan untuk pengguna WSL:**
+> Jika Anda meng-clone repo ini di Windows dan menjalankannya di WSL, beberapa file `.sh` mungkin menggunakan line ending CRLF yang tidak dikenali Bash.
+> Jalankan perintah berikut sebelum menjalankan skrip:
 
-# Build & run semua layanan backend
+```bash
+sudo apt update && sudo apt install dos2unix -y
+dos2unix scripts/*.sh
+```
+
+```bash
+# Buat kunci identitas Action Agent
+bash scripts/generate-keys.sh
+```
+
+```bash
+# Build & jalankan semua layanan backend
 docker-compose up --build
+```
+
  
 ## 📂 Struktur Proyek
 
