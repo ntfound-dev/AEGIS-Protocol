@@ -93,7 +93,7 @@ docker-compose up --build
 ```
 
 ## 📂 Struktur Proyek
- 
+```
 aegis-protocol/
 ├── .gitignore           # Mengabaikan file yang tidak perlu (build artifacts, .env, .pem, dll.)
 ├── README.md            # Dokumentasi utama: cara instalasi, setup, dan menjalankan setiap layanan.
@@ -142,7 +142,7 @@ aegis-protocol/
     ├── deploy-blockchain.sh   # Skrip untuk deploy semua canister di 2-backend-blockchain-icp.
     ├── run-agents.sh          # Skrip untuk jalankan semua agen Python di 3-backend-ai-agents.    
     └──  generate-keys.sh      # Skrip untuk membuat identity.pem baru.
-
+```
 ## 🎯 Rencana Masa Depan (Pasca-Hackathon)
 
 * *Q4 2025:* Peluncuran Testnet, mengundang 5 NGO mitra pertama untuk uji coba.
