@@ -6,6 +6,9 @@ services:
   # Layanan ini akan memulai replika ICP dan men-deploy semua canister.
   dfx-replica:
     # Menggunakan image SDK resmi yang benar dari DFINITY.
+    build:
+      context: ./services/dfx
+      dockerfile: Dockerfile
     image: dfinity/sdk
     container_name: aegis-dfx-replica
     ports:

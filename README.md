@@ -88,6 +88,7 @@ bash scripts/generate-keys.sh
 
 ```bash
 # Build & jalankan semua layanan backend
+docker-compose build dfx-replica
 docker-compose up --build
 ```
 
