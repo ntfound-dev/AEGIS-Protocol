@@ -1,21 +1,24 @@
-# docker-compose.yml (Versi yang sudah diperbaiki dan disempurnakan)
-services:
-  # Layanan ini akan memulai replika ICP dan men-deploy canister
-  dfx-replica:
-    # --- PERBAIKAN ---
-    # Menggunakan nama image SDK resmi yang benar
-    build:
-      context: .
-      dockerfile: Dockerfile.dfx
+# docker-compose.yml
+# File ini akan menjalankan semua layanan backend (ICP & Agen AI) dengan satu perintah.
+# Jalankan dengan: docker-compose up --build
 
+services:
+  # Layanan ini akan memulai replika ICP dan men-deploy semua canister.
+  dfx-replica:
+    # Menggunakan image SDK resmi yang benar dari DFINITY.
+    image: dfinity/sdk
     container_name: aegis-dfx-replica
     ports:
-      - "4943:4943" # Port standar dfx yang baru
+      - "4943:4943" # Port standar dfx yang baru.
     working_dir: /work
     volumes:
-      # Menghubungkan folder proyek Anda ke dalam container
-      - ./packages/execlayer_icp:/work
-    # Perintah ini akan memulai replika, menunggu, lalu men-deploy
+      # Menghubungkan folder backend blockchain Anda ke dalam container.
+      - ./services/2-backend-blockchain-icp:/work
+    # Perintah ini akan:
+    # 1. Memulai replika di latar belakang.
+    # 2. Menunggu 10 detik agar replika siap.
+    # 3. Men-deploy semua canister.
+    # 4. Tetap berjalan agar container tidak mati.
     command: >
       sh -c "
         dfx start --background --clean --host 0.0.0.0:4943 && 
@@ -24,23 +27,23 @@ services:
         tail -f /dev/null
       "
 
-  # Layanan untuk menjalankan Oracle Agent
+  # Layanan untuk menjalankan Oracle Agent.
   oracle-agent:
     build:
-      context: ./packages/AI_fetchai
+      context: ./services/3-backend-ai-agents
       dockerfile: Dockerfile
     container_name: aegis-oracle-agent
     command: python agents/oracle_agent.py
     ports:
       - "8001:8001"
     depends_on:
-      - dfx-replica
+      - dfx-replica # Akan menunggu dfx-replica siap sebelum dimulai.
     restart: on-failure
 
-  # Layanan untuk menjalankan Validator Agent
+  # Layanan untuk menjalankan Validator Agent.
   validator-agent:
     build:
-      context: ./packages/AI_fetchai
+      context: ./services/3-backend-ai-agents
       dockerfile: Dockerfile
     container_name: aegis-validator-agent
     command: python agents/validator_agent.py
@@ -50,23 +53,24 @@ services:
       - dfx-replica
     restart: on-failure
 
-  # Layanan untuk menjalankan Action Agent
+  # Layanan untuk menjalankan Action Agent.
   action-agent:
     build:
-      context: ./packages/AI_fetchai
+      context: ./services/3-backend-ai-agents
       dockerfile: Dockerfile
     container_name: aegis-action-agent
     command: python agents/action_agent.py
     ports:
       - "8003:8003"
     environment:
-      # Variabel ini akan diisi setelah dfx deploy selesai
+      # Variabel ini akan diisi secara otomatis setelah dfx deploy selesai.
       - EVENT_FACTORY_CANISTER_ID=${EVENT_FACTORY_CANISTER_ID}
-      # Mengubah URL ICP untuk menunjuk ke layanan Docker
+      # Mengubah URL ICP untuk menunjuk ke layanan Docker dfx-replica.
       - ICP_URL=http://dfx-replica:4943
     volumes:
-      - ./packages/AI_fetchai/identity.pem:/app/identity.pem
-      - ./packages/execlayer_icp/canister_ids.json:/app/canister_ids.json
+      # Memastikan identity.pem dan canister_ids.json tersedia di dalam container.
+      - ./services/3-backend-ai-agents/identity.pem:/app/identity.pem
+      - ./services/2-backend-blockchain-icp/.dfx/local/canister_ids.json:/app/canister_ids.json
     depends_on:
       - dfx-replica
     restart: on-failure

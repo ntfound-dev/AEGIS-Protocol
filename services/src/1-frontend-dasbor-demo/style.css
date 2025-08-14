@@ -1,0 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+
+:root {
+    --bg-color: #f0f4f8;
+    --card-bg-color: #ffffff;
+    --primary-color: #3b82f6;
+    --primary-hover-color: #2563eb;
+    --text-color: #1e293b;
+    --label-color: #475569;
+    --border-color: #cbd5e1;
+    --success-color: #10b981;
+    --error-color: #ef4444;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.console-container {
+    background-color: var(--card-bg-color);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 600px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+header {
+    text-align: center;
+}
+
+.logo {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 16px;
+}
+
+header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+}
+
+header p {
+    font-size: 16px;
+    color: var(--label-color);
+    margin-top: 8px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+label {
+    font-weight: 500;
+    color: var(--label-color);
+}
+
+textarea {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 150px;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+button {
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 20px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+button:hover {
+    background-color: var(--primary-hover-color);
+}
+
+.status-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#statusLog {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    min-height: 80px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+footer {
+    text-align: center;
+    font-size: 12px;
+    color: #94a3b8;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}

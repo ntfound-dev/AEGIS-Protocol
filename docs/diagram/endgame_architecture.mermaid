@@ -1,0 +1,50 @@
+graph TD
+    subgraph Ekosistem Eksternal & Aktor Global
+        A1[Berbagai Sumber Data Global <br><i>(API, Satelit, Sensor IoT)</i>]
+        U1[Komunitas Global <br><i>(Donatur, Relawan, Pemerhati)</i>]
+        U2[Organisasi Bantuan Terakreditasi<br><i>(NGOs, Tim Medis)</i>]
+        I1[Penyedia Asuransi & Likuiditas]
+    end
+
+    subgraph Lapisan Intelijen Terdesentralisasi (Fetch.ai Ecosystem)
+        B1(Jaringan Oracle Terdesentralisasi <br><i>Decentralized Oracle Network - DON</i>)
+        B2(Jaringan Validator AI <br><i>AI Validator Network</i>)
+        B3(Kawanan Agen Aksi <br><i>Swarm of Action Agents</i>)
+        T1{{Tokenomics $AEGIS <br><i>(Rewards & Slashing)</i>}}
+    end
+
+    subgraph Lapisan Kepercayaan & Eksekusi Cerdas (ICP Network)
+        C1{{Registry & Governance Core}}
+        C2{{EventFactoryCanister}}
+        C3{{DID & SBT Ledger <br><i>(Identitas & Reputasi)</i>}}
+        C4{{Parametric Insurance Vault}}
+        
+        subgraph "Event DAO: Gempa Haiti" (Canister Instance)
+            D1[(Treasury & Donation Vault)]
+            D2[(Governance Module & Voting)]
+            D3[(Needs & Logistics Marketplace)]
+        end
+    end
+
+    %% Alur Logika & Insentif
+    A1 -- Data Mentah --> B1
+    B1 -- Laporan Terstruktur --> B2
+    B1 -- Diberi Imbalan oleh --> T1
+    B2 -- Mencapai Konsensus --> B3
+    B2 -- Diberi Imbalan/Dihukum oleh --> T1
+    
+    B3 -- 1. Panggil `declare_event` --> C2
+    C2 -- 2. Deploy Event DAO --> D1 & D2 & D3
+    
+    I1 -- Mendanai --> C4
+    C4 -- 3. Injeksi Dana Otomatis --> D1
+    
+    U1 & U2 -- 4. Bergabung & Berpartisipasi --> D2
+    U1 -- Berdonasi ke --> D1
+    U2 -- Mengajukan Proposal ke --> D3
+    
+    D2 -- 5. Menjalankan Voting --> U1 & U2
+    D1 -- 6. Mencairkan Dana Sesuai Hasil Voting --> U2
+    
+    D2 -- 7. Panggil `mint_sbt` --> C3
+    C3 -- Menerbitkan Lencana Reputasi --> U1 & U2

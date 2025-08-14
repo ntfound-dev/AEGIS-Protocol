@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aegis Protocol - Demo Console</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="console-container">
+        <header>
+            <img src="https://i.imgur.com/your-logo-image.png" alt="Aegis Protocol Logo" class="logo">
+            <h1>Aegis Protocol - Disaster Response Console</h1>
+            <p>Kirim sinyal bencana ke Validator Agent untuk memulai alur kerja.</p>
+        </header>
+
+        <main>
+            <div class="form-group">
+                <label for="eventData">Data Laporan Bencana (JSON)</label>
+                <textarea id="eventData" rows="10" placeholder="Tempelkan data JSON di sini..."></textarea>
+            </div>
+            
+            <button id="sendSignalButton">Kirim Sinyal Darurat</button>
+
+            <div class="status-panel">
+                <label>Status & Respons</label>
+                <pre id="statusLog">Menunggu sinyal...</pre>
+            </div>
+        </main>
+        
+        <footer>
+            <p>Aegis Protocol Hackathon Demo</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

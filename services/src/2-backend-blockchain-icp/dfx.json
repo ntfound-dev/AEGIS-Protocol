@@ -5,7 +5,7 @@
       "type": "motoko",
       "main": "src/event_factory/main.mo"
     },
-    "event_dao_template": {
+    "event_dao": {
       "type": "motoko",
       "main": "src/event_dao/main.mo"
     },
@@ -20,13 +20,13 @@
   },
   "defaults": {
     "build": {
-      "packtool": "mops",
+      "packtool": "",
       "args": ""
     }
   },
   "networks": {
     "local": {
-      "bind": "127.0.0.1:8000",
+      "bind": "127.0.0.1:4943",
       "type": "ephemeral"
     }
   }

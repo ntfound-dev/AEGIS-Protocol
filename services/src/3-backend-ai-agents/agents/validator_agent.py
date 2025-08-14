@@ -1,4 +1,4 @@
-# agents/validator_agent.py
+# File: services/3-backend-ai-agents/agents/validator_agent.py
 from uagents import Agent, Context, Model
 from uagents.setup import fund_agent_if_low
 import json
@@ -25,8 +25,6 @@ validator_agent = Agent(
     seed="validator_agent_alpha_secret_seed_phrase_67890"
 )
 
-# --- PERBAIKAN ---
-# Menghapus baris yang salah dan memperbaiki panggilan fungsi
 fund_agent_if_low(str(validator_agent.wallet.address()))
 
 def perform_ai_validation(data: RawEarthquakeData) -> ValidatedEvent:

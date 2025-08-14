@@ -1,4 +1,4 @@
-# agents/action_agent.py
+# File: services/3-backend-ai-agents/agents/action_agent.py
 from uagents import Agent, Context, Model
 from uagents.setup import fund_agent_if_low
 from ic.agent import Agent as ICAgent
@@ -16,7 +16,7 @@ class ValidatedEvent(Model):
 
 load_dotenv()
 
-ICP_URL = "http://127.0.0.1:8000"
+ICP_URL = os.getenv("ICP_URL", "http://127.0.0.1:4943")
 EVENT_FACTORY_CANISTER_ID = os.getenv("EVENT_FACTORY_CANISTER_ID")
 IDENTITY_PEM_PATH = "./identity.pem"
 
@@ -26,7 +26,6 @@ action_agent = Agent(
     seed="action_agent_bridge_secret_seed_phrase_11223"
 )
 
-# --- PERBAIKAN ---
 fund_agent_if_low(str(action_agent.wallet.address()))
 
 def call_icp_declare_event(event: ValidatedEvent):
@@ -35,8 +34,6 @@ def call_icp_declare_event(event: ValidatedEvent):
         return None
 
     try:
-        # --- PERBAIKAN ---
-        # Membaca file PEM sebagai teks, bukan bytes
         identity = Identity.from_pem(open(IDENTITY_PEM_PATH, "r").read())
         client = Client(url=ICP_URL)
         ic_agent = ICAgent(identity=identity, client=client)
@@ -51,8 +48,6 @@ def call_icp_declare_event(event: ValidatedEvent):
 
         print(f"Calling 'declare_event' on canister {EVENT_FACTORY_CANISTER_ID}...")
         
-        # --- PERBAIKAN ---
-        # Mengganti 'method' dengan 'method_name'
         response = ic_agent.update_raw(
             canister_id=EVENT_FACTORY_CANISTER_ID,
             method_name="declare_event",

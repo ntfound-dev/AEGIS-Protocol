@@ -1,2 +1,18 @@
-# Ignore build artifacts
+# Lingkungan Python
+venv/
+__pycache__/
+*.pyc
+
+# Kunci & Variabel Lingkungan (SANGAT PENTING UNTUK KEAMANAN)
+.env
+*.pem
+
+# Folder hasil build dari DFINITY SDK (ICP)
 .dfx/
+
+# File log
+*.log
+
+# File sistem operasi
+.DS_Store
+Thumbs.db
