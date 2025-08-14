@@ -72,13 +72,54 @@ docker-compose up --build
  
 ## 📂 Struktur Proyek
 
-Proyek ini dibagi menjadi tiga layanan utama:
-
-services/
-├── 1-frontend-flutter/       <-- Tim Frontend (Flutter)
-├── 2-backend-blockchain-icp/ <-- Tim Blockchain (Motoko/ICP)
-└── 3-backend-ai-agents/      <-- Tim AI & Integrasi (Python/Fetch.ai)
-
+aegis-protocol/
+├── .gitignore           # Mengabaikan file yang tidak perlu (build artifacts, .env, .pem, dll.)
+├── README.md            # Dokumentasi utama: cara instalasi, setup, dan menjalankan setiap layanan.
+├── docker-compose.yml   #Untuk menjalankan semua layanan backend dengan satu perintah.
+│
+├── docs/
+│   ├── architecture.md # Penjelasan teknis arsitektur secara mendalam.
+│   ├── concepts.md          # Penjelasan visi dan konsep inti dari Aegis Protocol.
+│    └── diagrams/      
+│       └── endgame_architecture.mermaid    # File diagram Mermaid 
+│
+├── services/  <-- FOLDER UTAMA SEMUA KODE APLIKASI
+│   │
+│   ├── 1-frontend-dasbor-demo/  <------------ [ UNTUK TIM FRONTEND ]
+│   │   ├── index.html            # Halaman utama untuk Dasbor Demo.
+│   │   ├── style.css             # styling halaman.
+│   │   └── script.js             # Logika untuk mengirim "pesan obrolan" ke agen AI.
+│   │                             # kalau ada tambahan lain silahkan 
+│   ├── 2-backend-blockchain-icp/  <---------- [ UNTUK TIM BLOCKCHAIN ]
+│   │   ├── dfx.json              # File konfigurasi utama untuk DFINITY SDK (dfx).
+│   │   ├── src/                  # Folder semua source code canister.
+│   │   │   ├── event_factory/    
+│   │   │   │   └── main.mo       # Canister (pabrik) untuk membuat EventDAO. 
+│   │   │   ├── event_dao/        
+│   │   │   │   └── main.mo       # Template canister untuk setiap bencana.
+│   │   │   ├── did_sbt_ledger/   
+│   │   │   │   └── main.mo       # Canister untuk identitas dan reputasi.
+│   │   │   └── insurance_vault/
+│   │   │       └── main.mo       # Canister brankas asuransi parametrik.
+│   │   └── .dfx/                 # Folder yang dibuat otomatis oleh dfx, berisi hasil build.
+│   │       └── local/            
+│   │           ├── canister_ids.json  # File PENTING: berisi ID canister setelah deploy
+│   │           └── canisters/         #Berisi file .did (API) dan .wasm (kode terkompilasi).
+│   │
+│   └── 3-backend-ai-agents/      <------------ [UNTUK TIM AI]
+│       ├── requirements.txt       # Dependensi Python (uagents, requests, ic-py).     
+│       ├── Dockerfile             # Resep untuk membuat container Docker untuk agen. 
+│       ├── .env.example           # Contoh file environment.
+│       ├── identity.pem           # Kunci identitas untuk Action Agent (diabaikan oleh gitignore).
+│       └── agents/ 
+│           ├── oracle_agent.py     # Agen yang memantau data dunia nyata.
+│           ├── validator_agent.py  # Agen yang memvalidasi data bencana.
+│           └── action_agent.py     # Agen yang menjadi jembatan ke ICP.
+│
+└── scripts/
+    ├── deploy-blockchain.sh   # Skrip untuk deploy semua canister di 2-backend-blockchain-icp.
+    ├── run-agents.sh          # Skrip untuk jalankan semua agen Python di 3-backend-ai-agents.    
+    └──  generate-keys.sh      # Skrip untuk membuat identity.pem baru.
 
 ## 🎯 Rencana Masa Depan (Pasca-Hackathon)
 
