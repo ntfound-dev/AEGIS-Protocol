@@ -7,12 +7,14 @@ WORKDIR /app
 # Salin file requirements terlebih dahulu untuk caching yang lebih baik
 COPY requirements.txt .
 
-# Instal semua dependensi dari requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Upgrade pip dan install dependensi dengan optimasi timeout & binary
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir --prefer-binary --default-timeout=200 \
+       -r requirements.txt \
+       -i https://pypi.org/simple
 
 # Salin semua kode agen dan file lainnya ke dalam container
 COPY . .
 
-# Perintah default ini tidak akan digunakan karena kita menentukannya di docker-compose.yml,
-# tapi ini adalah praktik yang baik untuk menyertakannya.
+# Perintah default
 CMD ["python", "agents/oracle_agent.py"]
