@@ -1,0 +1,3 @@
+[dependencies]
+motoko-stable-structures = "https://github.com/canisters-xyz/motoko-stable-structures#v0.6.3"
+base = "0.15.1"

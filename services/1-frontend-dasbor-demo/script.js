@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sendSignalButton.addEventListener('click', async () => {
         // Alamat dari Validator Agent yang berjalan di Docker
         // Port 8002 adalah yang kita definisikan di docker-compose.yml
-        const agentUrl = 'http://localhost:8002/submit'; 
+       const agentUrl = 'http://localhost:8002/verify_disaster';
         
         let eventData;
         try {

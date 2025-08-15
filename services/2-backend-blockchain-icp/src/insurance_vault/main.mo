@@ -1,27 +1,55 @@
-// File: services/2-backend-blockchain-icp/src/insurance_vault/main.mo
-
 import Principal "mo:base/Principal";
 import Nat "mo:base/Nat";
-import Result "mo:base/Result";
 import Array "mo:base/Array";
+import R "mo:base/Result";
 
-// Impor tipe data dari EventFactory untuk konsistensi
-import EventFactory "mo:../event_factory/main";
+persistent actor class InsuranceVault(factory_id: Principal, funder_id: Principal) {
 
-actor InsuranceVault {
+    // ---- Type Aliases ----
+    public type Result<T, E> = R.Result<T, E>;
 
-    private var total_liquidity: Nat = 0;
-    private var authorized_factory: Principal;
-    private var authorized_funders: [Principal] = [];
-
-    public init(factory_id: Principal, initial_funders: [Principal]) {
-        authorized_factory = factory_id;
-        authorized_funders = initial_funders;
+    // ---- Data Types ----
+    public type ValidatedEventData = {
+        event_type: Text;
+        severity: Text;
+        details_json: Text;
     };
 
-    public shared(msg) func fund_vault(amount: Nat) : async Result.Result<Text, Text> {
-        if (not is_authorized_funder(msg.caller)) {
-            return #err("Caller is not an authorized funder.");
+    // ---- State ----
+    var total_liquidity: Nat = 0;
+    let authorized_factory: Principal = factory_id;
+    var authorized_funders: [Principal] = [funder_id];
+
+    // ---- Internal Helpers ----
+    private func arrayContains<T>(arr: [T], val: T, eq: (T, T) -> Bool): Bool {
+        for (item in arr.vals()) {
+            if (eq(item, val)) { return true };
+        };
+        false
+    };
+
+    private func isAuthorizedFunder(who: Principal): Bool {
+        arrayContains<Principal>(authorized_funders, who, Principal.equal)
+    };
+
+    private func determine_payout(event_data: ValidatedEventData): Nat {
+        switch (event_data.severity) {
+            case ("Critical") { 2_000_000 };
+            case ("High")     {   500_000 };
+            case ("Medium")   {    50_000 };
+            case (_)          {         0 };
+        }
+    };
+
+    // ---- Public API ----
+
+    // Update function: memodifikasi state
+    public shared(msg) func fund_vault(amount: Nat): async Result<Text, Text> {
+        if (amount == 0) {
+            return #err("Amount must be > 0");
+        };
+        if (not isAuthorizedFunder(msg.caller)) {
+            return #err("Unauthorized: caller is not in the authorized funders list.");
         };
 
         total_liquidity += amount;
@@ -30,42 +58,47 @@ actor InsuranceVault {
 
     public shared(msg) func release_initial_funding(
         dao_canister_id: Principal,
-        event_data: EventFactory.ValidatedEventData
-    ) : async Result.Result<Text, Text> {
+        event_data: ValidatedEventData
+    ): async Result<Text, Text> {
         if (msg.caller != authorized_factory) {
-            return #err("Unauthorized: Only the EventFactory can call this function.");
+            return #err("Unauthorized: only the EventFactory can call this function.");
         };
 
         let payout_amount = determine_payout(event_data);
+
         if (payout_amount == 0) {
             return #ok("Event severity does not meet the policy trigger for a payout.");
         };
-
         if (total_liquidity < payout_amount) {
             return #err("Insufficient liquidity in the vault to cover the payout.");
         };
 
         total_liquidity -= payout_amount;
-        return #ok("Successfully released " # Nat.toText(payout_amount) # " to DAO " # Principal.toText(dao_canister_id));
+
+        return #ok(
+            "Successfully released " # Nat.toText(payout_amount)
+            # " to DAO " # Principal.toText(dao_canister_id)
+        );
     };
 
-    private func determine_payout(event_data: EventFactory.ValidatedEventData) : Nat {
-        switch (event_data.severity) {
-            case ("Critical") { return 2_000_000; };
-            case ("High")     { return 500_000; };
-            case ("Medium")   { return 50_000; };
-            case (_)          { return 0; };
-        }
+    // Query function: hanya baca data, tidak memodifikasi state
+    public query func get_total_liquidity(): async Nat {
+        total_liquidity
     };
 
-    private query func is_authorized_funder(p: Principal) : Bool {
-        for (funder in authorized_funders.vals()) {
-            if (funder == p) { return true; };
+    public query func get_authorized_funders(): async [Principal] {
+        authorized_funders
+    };
+
+    // Update function: memodifikasi daftar funders
+    public shared(msg) func add_funder(p: Principal): async Result<Text, Text> {
+        if (msg.caller != authorized_factory) {
+            return #err("Unauthorized: only the EventFactory can add funders.");
         };
-        return false;
-    };
-
-    public shared(msg) query func get_total_liquidity() : async Nat {
-        return total_liquidity;
+        if (arrayContains<Principal>(authorized_funders, p, Principal.equal)) {
+            return #ok("Funder already authorized.");
+        };
+        authorized_funders := Array.append<Principal>(authorized_funders, [p]);
+        return #ok("Funder added.");
     };
 }

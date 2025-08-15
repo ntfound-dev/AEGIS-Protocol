@@ -1,77 +1,55 @@
 // File: services/2-backend-blockchain-icp/src/event_factory/main.mo
 
-// Mengimpor library standar yang dibutuhkan dari Motoko
 import Principal "mo:base/Principal";
 import Result "mo:base/Result";
-import Error "mo:base/Error";
 import Nat "mo:base/Nat";
-import Blob "mo:base/Blob";
+// --- PERBAIKAN: Import ExperimentalCycles untuk manajemen cycles ---
+import Cycles "mo:base/ExperimentalCycles";
+// --- PERBAIKAN: Import actor class EventDAO secara langsung ---
+import EventDAO "canister:event_dao";
 
-// Impor canister EventDAO agar kita tahu "cetakan" DAO yang akan kita buat
-// DFX akan secara otomatis menautkan ini saat build
-import EventDAO "mo:../event_dao/main";
+// --- PERBAIKAN: Ubah menjadi actor class agar bisa diinstansiasi dengan ID vault ---
+actor class EventFactory (vault_id: Principal) {
 
-actor EventFactory {
-
-    // Mendefinisikan tipe data untuk informasi bencana yang divalidasi.
-    // Ini adalah struktur data yang akan dikirim oleh Action Agent dari Fetch.ai.
-    public type ValidatedEventData = {
-        event_type: Text;
-        severity: Text;
-        details_json: Text; // Detail dalam format JSON yang diubah menjadi teks
-    };
-
-    // Mendefinisikan tipe data untuk hasil dari pemanggilan fungsi `declare_event`.
-    // Hasilnya bisa berupa #ok dengan ID Canister baru, atau #err dengan pesan kesalahan.
+    public type ValidatedEventData = EventDAO.ValidatedEventData;
     public type DeclareEventResult = Result.Result<Principal, Text>;
 
-    // --- FUNGSI UTAMA ---
-    // Fungsi ini bersifat 'shared', artinya bisa dipanggil dari luar (oleh Action Agent).
-    // Ia menerima data bencana yang sudah divalidasi.
+    // Menyimpan ID insurance_vault yang berwenang
+    let insurance_vault : actor {
+        release_initial_funding: (Principal, ValidatedEventData) -> async Result.Result<Text, Text>;
+    } = actor(vault_id);
+
     public shared(msg) func declare_event(eventData: ValidatedEventData) : async DeclareEventResult {
+        // --- PERBAIKAN: Logika pembuatan canister yang jauh lebih sederhana ---
+        
+        // 1. Tentukan argumen inisialisasi untuk EventDAO
+        let init_args : EventDAO.InitArgs = {
+            event_data = eventData;
+            factory_principal = Principal.fromActor(self);
+        };
 
-        // Di versi produksi, Anda harus menambahkan pengecekan keamanan di sini
-        // untuk memastikan bahwa `msg.caller` (pemanggil fungsi ini)
-        // adalah Principal (ID) dari Action Agent yang sah.
-
+        // 2. Tentukan jumlah cycles yang dibutuhkan untuk membuat canister + cadangan
+        // (Jumlah ini perlu disesuaikan)
+        let cycles_for_new_canister : Nat = 2_000_000_000_000; // Contoh: 2 Triliun cycles
+        
         try {
-            // Kita butuh Wasm (kode yang sudah dikompilasi) dari EventDAO untuk menginstalnya.
-            // DFX akan menangani ini secara otomatis saat kita men-deploy.
-            let dao_wasm : Blob = EventDAO.idl_to_wasm((EventDAO,));
+            // 3. Tambahkan cycles ke panggilan pembuatan canister
+            Cycles.add(cycles_for_new_canister);
 
-            // Argumen yang akan diteruskan saat EventDAO baru pertama kali dibuat (inisialisasi).
-            let init_args : EventDAO.InitArgs = {
-                event_data = eventData;
-                // `Principal.fromActor(self)` adalah ID dari canister EventFactory ini sendiri.
-                factory_principal = Principal.fromActor(self);
-            };
+            // 4. Buat instance baru dari EventDAO actor class
+            // Cycles yang ditambahkan di atas akan digunakan untuk pembuatan ini
+            let new_dao_canister = await EventDAO.EventDAO(init_args);
+            let new_canister_principal = Principal.fromActor(new_dao_canister);
 
-            // Membuat canister baru di jaringan Internet Computer.
-            // Kita memberinya 1 Triliun cycles sebagai "bahan bakar" awal.
-            let new_canister_principal = await create_canister(1_000_000_000_000);
+            // 5. (Opsional) Panggil insurance_vault untuk melepaskan dana awal
+            let release_result = await insurance_vault.release_initial_funding(new_canister_principal, eventData);
+            // Anda bisa menangani 'release_result' di sini jika perlu
 
-            // Setelah canister kosong dibuat, kita menginstal kode EventDAO ke dalamnya.
-            await install_code(new_canister_principal, dao_wasm, init_args);
-
-            // Jika semua berhasil, kembalikan ID dari canister DAO yang baru dibuat.
             return #ok(new_canister_principal);
 
         } catch (e) {
-            // Jika terjadi error, kembalikan pesan kesalahan.
+            // Jika gagal (misalnya cycles tidak cukup), kembalikan error
             return #err(Error.message(e));
         }
-    };
-
-    // --- FUNGSI HELPER (PEMBANTU) ---
-    // Fungsi-fungsi ini adalah versi yang disederhanakan. DFX akan menyediakan implementasi
-    // yang sebenarnya saat proses build dengan menghubungkannya ke IC Management Canister.
-
-    private func create_canister(cycles: Nat) : async Principal {
-        // Ini adalah placeholder.
-        return Principal.fromText("aaaaa-aa"); // Dummy Principal
-    };
-
-    private func install_code(id: Principal, wasm: Blob, init_args: EventDAO.InitArgs) : async () {
-        // Ini adalah placeholder.
     };
 }
