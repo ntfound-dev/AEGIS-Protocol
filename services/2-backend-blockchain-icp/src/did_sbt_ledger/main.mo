@@ -1,5 +1,3 @@
-// File: services/2-backend-blockchain-icp/src/did_sbt_ledger/main.mo
-
 import Principal "mo:base/Principal";
 import Nat "mo:base/Nat";
 import Array "mo:base/Array";
@@ -28,6 +26,34 @@ persistent actor class DID_SBT_Ledger(init_admin : Principal) {
      var next_badge_id : Nat = 0;
      var authorized_minters : [Principal] = [];
      var admin : Principal = init_admin;
+
+
+
+persistent actor class DID_SBT_Ledger(init_admin : Principal) {
+
+    // Types moved inside the actor to satisfy the moc restriction
+    public type DIDProfile = {
+        owner : Principal;
+        name : Text;
+        entity_type : Text;
+        contact_info : Text;
+        registration_date : Time.Time;
+    };
+
+    public type SBT = {
+        badge_id : Nat;
+        issuer : Principal;
+        event_name : Text;
+        badge_type : Text;
+        issued_at : Time.Time;
+    };
+
+    // State (kept as before)
+    var did_registry : [(Principal, DIDProfile)] = [];
+    var sbt_ledger : [(Principal, [SBT])] = [];
+    var next_badge_id : Nat = 0;
+    var authorized_minters : [Principal] = [];
+    var admin : Principal = init_admin;
 
 
     // Fungsi registrasi DID
@@ -107,4 +133,5 @@ persistent actor class DID_SBT_Ledger(init_admin : Principal) {
         };
         return [];
     };
-}
+};
+};

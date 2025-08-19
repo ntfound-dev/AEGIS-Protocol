@@ -1,71 +1,68 @@
-// File: services/2-backend-blockchain-icp/src/event_dao/main.mo
+// File: src/event_dao/main.mo
 
+import TrieMap "mo:base/TrieMap";
+import Buffer "mo:base/Buffer";
+import Types "types";
 import Principal "mo:base/Principal";
 import Nat "mo:base/Nat";
-import Trie "mo:base/Trie";
-import Result "mo:base/Result";
-import Array "mo:base/Array";
-import Option "mo:base/Option";
+import Hash "mo:base/Hash";
 
-actor class EventDAO (init_args : EventDAO.InitArgs) {
+import EventDefs "event_defs"; 
 
-    // --- STATE DARI DAO ---
-    stable var treasury_balance: Nat = 0;
-    // --- PERBAIKAN: Menggunakan Trie.empty() untuk inisialisasi ---
-    stable var donors = Trie.empty<Principal, Nat>();
+// Beri nama actor; gunakan 'persistent' (butuh motoko >= 0.13.5)
+persistent actor EventDAO {
 
-    public type ProposalId = Nat;
-    public stable type Proposal = {
-        id: ProposalId;
-        proposer: Principal;
-        title: Text;
-        description: Text;
-        amount_requested: Nat;
-        recipient_wallet: Principal;
-        var votes_for: Nat;         // Dijadikan 'var' agar bisa diubah
-        var votes_against: Nat;     // Dijadikan 'var' agar bisa diubah
-        var voters: Trie<Principal, Bool>; // Dijadikan 'var' agar bisa diubah
-        var is_executed: Bool;      // Dijadikan 'var' agar bisa diubah
+    // contoh: treasury ingin dipertahankan -> jangan transient (sesuaikan kebijakanmu)
+    var treasury_balance: Nat = 0;
+
+    // TrieMap bukan stable type -> transient agar di-reset saat upgrade
+    transient var proposals : TrieMap.TrieMap<Nat, EventDefs.Proposal> =
+        TrieMap.TrieMap<Nat, EventDefs.Proposal>(Nat.equal, EventDefs.hashNat);
+    transient var donors : TrieMap.TrieMap<Principal, Nat> =
+        TrieMap.TrieMap<Principal, Nat>(Principal.equal, Principal.hash);
+    var nextProposalId : Nat = 0;
+
+    transient var event_details : ?Types.ValidatedEventData = null;
+    transient var factory_principal : ?Principal = null;
+
+    // initialize tidak perlu msg di sini (kamu tidak pakai msg.caller)
+    public shared func initialize(args: Types.InitArgs) : async Text {
+        if (factory_principal != null) {
+            return "Already initialized.";
+        };
+        factory_principal := ?args.factory_principal;
+        event_details := ?args.event_data;
+        return "Initialized.";
     };
-    // --- PERBAIKAN: Menggunakan Trie.empty() untuk inisialisasi ---
-    stable var proposals = Trie.empty<ProposalId, Proposal>();
-    stable var nextProposalId: ProposalId = 0;
 
-    // Tipe ini harus cocok dengan yang ada di EventFactory
-    public type ValidatedEventData = {
-        event_type: Text;
-        severity: Text;
-        details_json: Text;
-    };
-    
-    public type InitArgs = {
-        event_data: ValidatedEventData;
-        factory_principal: Principal;
-    };
-    
-    // Menyimpan argumen inisialisasi
-    stable let event_details : ValidatedEventData = init_args.event_data;
-    stable let factory_principal: Principal = init_args.factory_principal;
-
-    // --- FUNGSI PUBLIK ---
-    public shared(msg) query func get_event_details() : async ValidatedEventData {
+    public shared query func get_event_details() : async ?Types.ValidatedEventData {
         return event_details;
     };
-    
-    public shared(msg) query func get_all_proposals() : async [Proposal] {
-        return proposals.values(); // Cara lebih singkat untuk mendapatkan semua value
-    };
 
-    public shared(msg) func donate(amount: Nat) : async Text {
-        treasury_balance += amount;
-        let current_donation = Option.get(donors.get(msg.caller), 0);
-        donors.put(msg.caller, current_donation + amount);
-        return "Thank you for your donation!";
+    public shared query func get_all_proposals() : async [EventDefs.ProposalInfo] {
+        var results = Buffer.Buffer<EventDefs.ProposalInfo>(proposals.size());
+        for ((_, proposal) in proposals.entries()) {
+            let info : EventDefs.ProposalInfo = {
+                id = proposal.id;
+                proposer = proposal.proposer;
+                title = proposal.title;
+                description = proposal.description;
+                amount_requested = proposal.amount_requested;
+                recipient_wallet = proposal.recipient_wallet;
+                votes_for = proposal.votes_for;
+                votes_against = proposal.votes_against;
+                is_executed = proposal.is_executed;
+            };
+            results.add(info);
+        };
+        return Buffer.toArray(results);
     };
 
     public shared(msg) func submit_proposal(title: Text, description: Text, amount: Nat, recipient: Principal) : async Text {
-        let proposal : Proposal = {
-            id = nextProposalId;
+        let pid = nextProposalId;
+        let voters_map = TrieMap.TrieMap<Principal, Bool>(Principal.equal, Principal.hash);
+        let proposal : EventDefs.Proposal = {
+            id = pid;
             proposer = msg.caller;
             title = title;
             description = description;
@@ -73,55 +70,106 @@ actor class EventDAO (init_args : EventDAO.InitArgs) {
             recipient_wallet = recipient;
             votes_for = 0;
             votes_against = 0;
-            // --- PERBAIKAN: Menggunakan Trie.empty() untuk inisialisasi ---
-            voters = Trie.empty<Principal, Bool>();
+            voters = voters_map;
             is_executed = false;
         };
-        proposals.put(nextProposalId, proposal);
+
+        proposals.put(pid, proposal);
         nextProposalId += 1;
-        return "Proposal submitted with ID: " # Nat.toText(proposal.id);
+        return "Proposal submitted with ID: " # Nat.toText(pid);
     };
 
-    public shared(msg) func vote(proposalId: ProposalId, in_favor: Bool) : async Text {
-        if (donors.get(msg.caller) == null) { return "Only donors can vote."; };
+    public shared(msg) func donate(amount: Nat) : async Text {
+        let prev = donors.get(msg.caller);
+        switch (prev) {
+            case (null) {
+                donors.put(msg.caller, amount);
+            };
+            case (?old) {
+                donors.put(msg.caller, old + amount);
+            };
+        };
+        treasury_balance := treasury_balance + amount;
+        return "Donation received.";
+    };
 
-        switch (proposals.get(proposalId)) {
+    public shared(msg) func vote(proposalId: EventDefs.ProposalId, in_favor: Bool) : async Text {
+        if (donors.get(msg.caller) == null) {
+            return "Only donors can vote.";
+        };
+
+        let maybe = proposals.get(proposalId);
+        switch (maybe) {
             case (null) { return "Proposal not found."; };
-            case (?proposal) {
+            case (?proposal_ref) {
+                let proposal = proposal_ref;
                 if (proposal.voters.get(msg.caller) != null) {
                     return "You have already voted on this proposal.";
                 };
-                
-                // Karena field di tipe Proposal adalah 'var', kita bisa langsung mengubahnya
-                if (in_favor) {
-                    proposal.votes_for += 1;
-                } else {
-                    proposal.votes_against += 1;
-                };
+
                 proposal.voters.put(msg.caller, true);
-                
-                // Tidak perlu put() lagi karena kita memodifikasi record secara langsung
-                
-                try_execute_proposal(proposalId);
+
+                let updated = if (in_favor) {
+                    {
+                        id = proposal.id;
+                        proposer = proposal.proposer;
+                        title = proposal.title;
+                        description = proposal.description;
+                        amount_requested = proposal.amount_requested;
+                        recipient_wallet = proposal.recipient_wallet;
+                        votes_for = proposal.votes_for + 1;
+                        votes_against = proposal.votes_against;
+                        voters = proposal.voters;
+                        is_executed = proposal.is_executed;
+                    }
+                } else {
+                    {
+                        id = proposal.id;
+                        proposer = proposal.proposer;
+                        title = proposal.title;
+                        description = proposal.description;
+                        amount_requested = proposal.amount_requested;
+                        recipient_wallet = proposal.recipient_wallet;
+                        votes_for = proposal.votes_for;
+                        votes_against = proposal.votes_against + 1;
+                        voters = proposal.voters;
+                        is_executed = proposal.is_executed;
+                    }
+                };
+
+                proposals.put(proposalId, updated);
+
+                await try_execute_proposal(proposalId);
                 return "Vote cast successfully.";
             };
         };
     };
-    
-    private func try_execute_proposal(proposalId: ProposalId) {
-        switch (proposals.get(proposalId)) {
-            case (?proposal) {
-                // Gunakan 'and not' untuk kondisi boolean
+
+    private func try_execute_proposal(proposalId: EventDefs.ProposalId) : async () {
+        let maybe = proposals.get(proposalId);
+        switch (maybe) {
+            case (?proposal_ref) {
+                let proposal = proposal_ref;
                 if (proposal.votes_for > 5 and not proposal.is_executed) {
                     if (treasury_balance >= proposal.amount_requested) {
-                        treasury_balance -= proposal.amount_requested;
-                        // --- PERBAIKAN: Gunakan '=' untuk mengubah field record ---
-                        proposal.is_executed = true;
-                        // Tidak perlu put() lagi
-                    }
-                }
+                        treasury_balance := treasury_balance - proposal.amount_requested;
+                        let updated = {
+                            id = proposal.id;
+                            proposer = proposal.proposer;
+                            title = proposal.title;
+                            description = proposal.description;
+                            amount_requested = proposal.amount_requested;
+                            recipient_wallet = proposal.recipient_wallet;
+                            votes_for = proposal.votes_for;
+                            votes_against = proposal.votes_against;
+                            voters = proposal.voters;
+                            is_executed = true;
+                        };
+                        proposals.put(proposalId, updated);
+                    };
+                };
             };
             case (_) {};
         };
     };
-}
+};

@@ -1,3 +1,4 @@
+// Hapus import Buffer karena tidak digunakan lagi
 import Principal "mo:base/Principal";
 import Nat "mo:base/Nat";
 import Array "mo:base/Array";
@@ -16,9 +17,17 @@ persistent actor class InsuranceVault(factory_id: Principal, funder_id: Principa
     };
 
     // ---- State ----
-    var total_liquidity: Nat = 0;
-    let authorized_factory: Principal = factory_id;
-    var authorized_funders: [Principal] = [funder_id];
+    // Semua state harus dideklarasikan 'stable' secara eksplisit
+     var total_liquidity: Nat = 0;
+
+     let authorized_factory: Principal = factory_id;
+
+    // --- PERBAIKAN STRUKTUR STATE ---
+    // Pisahkan funder awal (immutable) dari funder tambahan (mutable)
+    // untuk mematuhi semua aturan compiler.
+     let initial_funder: Principal = funder_id;
+     var additional_funders: [Principal] = [];
+
 
     // ---- Internal Helpers ----
     private func arrayContains<T>(arr: [T], val: T, eq: (T, T) -> Bool): Bool {
@@ -28,8 +37,10 @@ persistent actor class InsuranceVault(factory_id: Principal, funder_id: Principa
         false
     };
 
+    // Fungsi helper ini sekarang harus memeriksa kedua variabel funder
     private func isAuthorizedFunder(who: Principal): Bool {
-        arrayContains<Principal>(authorized_funders, who, Principal.equal)
+        Principal.equal(who, initial_funder) or 
+        arrayContains<Principal>(additional_funders, who, Principal.equal)
     };
 
     private func determine_payout(event_data: ValidatedEventData): Nat {
@@ -43,7 +54,6 @@ persistent actor class InsuranceVault(factory_id: Principal, funder_id: Principa
 
     // ---- Public API ----
 
-    // Update function: memodifikasi state
     public shared(msg) func fund_vault(amount: Nat): async Result<Text, Text> {
         if (amount == 0) {
             return #err("Amount must be > 0");
@@ -81,24 +91,29 @@ persistent actor class InsuranceVault(factory_id: Principal, funder_id: Principa
         );
     };
 
-    // Query function: hanya baca data, tidak memodifikasi state
     public query func get_total_liquidity(): async Nat {
         total_liquidity
     };
 
+    // Fungsi query ini sekarang harus menggabungkan kedua daftar funder
     public query func get_authorized_funders(): async [Principal] {
-        authorized_funders
+        // Gabungkan funder awal dengan funder tambahan
+        Array.append<Principal>([initial_funder], additional_funders)
     };
 
-    // Update function: memodifikasi daftar funders
+    // Fungsi add_funder sekarang hanya berinteraksi dengan 'additional_funders'
     public shared(msg) func add_funder(p: Principal): async Result<Text, Text> {
         if (msg.caller != authorized_factory) {
             return #err("Unauthorized: only the EventFactory can add funders.");
         };
-        if (arrayContains<Principal>(authorized_funders, p, Principal.equal)) {
+        
+        if (isAuthorizedFunder(p)) {
             return #ok("Funder already authorized.");
         };
-        authorized_funders := Array.append<Principal>(authorized_funders, [p]);
+        
+        // Tambahkan ke daftar 'additional_funders'.
+        // Kita kembali menggunakan Array.append, abaikan warning performa demi correctness.
+        additional_funders := Array.append<Principal>(additional_funders, [p]);
         return #ok("Funder added.");
     };
-}
+};
