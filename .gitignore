@@ -16,3 +16,13 @@ __pycache__/
 # File sistem operasi
 .DS_Store
 Thumbs.db
+
+# node modules
+node_modules/
+
+# VS Code settings
+.vscode/
+
+# Mac / Linux junk
+.DS_Store
+*.log
