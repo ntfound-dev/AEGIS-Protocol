@@ -120,8 +120,5 @@ persistent actor class DID_SBT_Ledger(init_admin : Principal) {
         };
         return [];
     };
-<<<<<<< HEAD
+ };
 };
-=======
-};
->>>>>>> 18435f1b8b6935b1593c2551b506306b8d1a14a4
