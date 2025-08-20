@@ -5,27 +5,34 @@ import Buffer "mo:base/Buffer";
 import Types "types";
 import Principal "mo:base/Principal";
 import Nat "mo:base/Nat";
+import Nat32 "mo:base/Nat32";
 import Hash "mo:base/Hash";
 
 import EventDefs "event_defs"; 
 
-// Beri nama actor; gunakan 'persistent' (butuh motoko >= 0.13.5)
 persistent actor EventDAO {
 
-    // contoh: treasury ingin dipertahankan -> jangan transient (sesuaikan kebijakanmu)
-    var treasury_balance: Nat = 0;
+    // --- State Variables ---
+    var treasury_balance : Nat = 0;
 
-    // TrieMap bukan stable type -> transient agar di-reset saat upgrade
+    // Custom hash for Nat (avoid deprecated Nat.hash)
+    func customNatHash(n : Nat) : Hash.Hash {
+        Nat32.fromNat(n % 4294967296);
+    };
+
+    // TrieMap (transient: auto-reset on upgrade)
     transient var proposals : TrieMap.TrieMap<Nat, EventDefs.Proposal> =
-        TrieMap.TrieMap<Nat, EventDefs.Proposal>(Nat.equal, EventDefs.hashNat);
+        TrieMap.TrieMap<Nat, EventDefs.Proposal>(Nat.equal, customNatHash);
+
     transient var donors : TrieMap.TrieMap<Principal, Nat> =
         TrieMap.TrieMap<Principal, Nat>(Principal.equal, Principal.hash);
+
     var nextProposalId : Nat = 0;
 
     transient var event_details : ?Types.ValidatedEventData = null;
     transient var factory_principal : ?Principal = null;
 
-    // initialize tidak perlu msg di sini (kamu tidak pakai msg.caller)
+    // --- Initialization ---
     public shared func initialize(args: Types.InitArgs) : async Text {
         if (factory_principal != null) {
             return "Already initialized.";
@@ -35,14 +42,15 @@ persistent actor EventDAO {
         return "Initialized.";
     };
 
+    // --- Queries ---
     public shared query func get_event_details() : async ?Types.ValidatedEventData {
         return event_details;
     };
 
     public shared query func get_all_proposals() : async [EventDefs.ProposalInfo] {
-        var results = Buffer.Buffer<EventDefs.ProposalInfo>(proposals.size());
+        let results = Buffer.Buffer<EventDefs.ProposalInfo>(proposals.size());
         for ((_, proposal) in proposals.entries()) {
-            let info : EventDefs.ProposalInfo = {
+            results.add({
                 id = proposal.id;
                 proposer = proposal.proposer;
                 title = proposal.title;
@@ -52,15 +60,25 @@ persistent actor EventDAO {
                 votes_for = proposal.votes_for;
                 votes_against = proposal.votes_against;
                 is_executed = proposal.is_executed;
-            };
-            results.add(info);
+            });
         };
         return Buffer.toArray(results);
     };
 
-    public shared(msg) func submit_proposal(title: Text, description: Text, amount: Nat, recipient: Principal) : async Text {
+    // --- Proposals ---
+    public shared(msg) func submit_proposal(
+        title: Text,
+        description: Text,
+        amount: Nat,
+        recipient: Principal
+    ) : async Text {
         let pid = nextProposalId;
-        let voters_map = TrieMap.TrieMap<Principal, Bool>(Principal.equal, Principal.hash);
+
+        let voters_map = TrieMap.TrieMap<Principal, Bool>(
+            Principal.equal,
+            Principal.hash
+        );
+
         let proposal : EventDefs.Proposal = {
             id = pid;
             proposer = msg.caller;
@@ -76,33 +94,32 @@ persistent actor EventDAO {
 
         proposals.put(pid, proposal);
         nextProposalId += 1;
+
         return "Proposal submitted with ID: " # Nat.toText(pid);
     };
 
+    // --- Donations ---
     public shared(msg) func donate(amount: Nat) : async Text {
-        let prev = donors.get(msg.caller);
-        switch (prev) {
-            case (null) {
-                donors.put(msg.caller, amount);
-            };
-            case (?old) {
-                donors.put(msg.caller, old + amount);
-            };
+        switch (donors.get(msg.caller)) {
+            case (null) { donors.put(msg.caller, amount); };
+            case (?old) { donors.put(msg.caller, old + amount); };
         };
-        treasury_balance := treasury_balance + amount;
+        treasury_balance += amount;
         return "Donation received.";
     };
 
-    public shared(msg) func vote(proposalId: EventDefs.ProposalId, in_favor: Bool) : async Text {
+    // --- Voting ---
+    public shared(msg) func vote(
+        proposalId: EventDefs.ProposalId,
+        in_favor: Bool
+    ) : async Text {
         if (donors.get(msg.caller) == null) {
             return "Only donors can vote.";
         };
 
-        let maybe = proposals.get(proposalId);
-        switch (maybe) {
+        switch (proposals.get(proposalId)) {
             case (null) { return "Proposal not found."; };
-            case (?proposal_ref) {
-                let proposal = proposal_ref;
+            case (?proposal) {
                 if (proposal.voters.get(msg.caller) != null) {
                     return "You have already voted on this proposal.";
                 };
@@ -110,31 +127,9 @@ persistent actor EventDAO {
                 proposal.voters.put(msg.caller, true);
 
                 let updated = if (in_favor) {
-                    {
-                        id = proposal.id;
-                        proposer = proposal.proposer;
-                        title = proposal.title;
-                        description = proposal.description;
-                        amount_requested = proposal.amount_requested;
-                        recipient_wallet = proposal.recipient_wallet;
-                        votes_for = proposal.votes_for + 1;
-                        votes_against = proposal.votes_against;
-                        voters = proposal.voters;
-                        is_executed = proposal.is_executed;
-                    }
+                    { proposal with votes_for = proposal.votes_for + 1 }
                 } else {
-                    {
-                        id = proposal.id;
-                        proposer = proposal.proposer;
-                        title = proposal.title;
-                        description = proposal.description;
-                        amount_requested = proposal.amount_requested;
-                        recipient_wallet = proposal.recipient_wallet;
-                        votes_for = proposal.votes_for;
-                        votes_against = proposal.votes_against + 1;
-                        voters = proposal.voters;
-                        is_executed = proposal.is_executed;
-                    }
+                    { proposal with votes_against = proposal.votes_against + 1 }
                 };
 
                 proposals.put(proposalId, updated);
@@ -145,26 +140,14 @@ persistent actor EventDAO {
         };
     };
 
+    // --- Execution ---
     private func try_execute_proposal(proposalId: EventDefs.ProposalId) : async () {
-        let maybe = proposals.get(proposalId);
-        switch (maybe) {
-            case (?proposal_ref) {
-                let proposal = proposal_ref;
+        switch (proposals.get(proposalId)) {
+            case (?proposal) {
                 if (proposal.votes_for > 5 and not proposal.is_executed) {
                     if (treasury_balance >= proposal.amount_requested) {
-                        treasury_balance := treasury_balance - proposal.amount_requested;
-                        let updated = {
-                            id = proposal.id;
-                            proposer = proposal.proposer;
-                            title = proposal.title;
-                            description = proposal.description;
-                            amount_requested = proposal.amount_requested;
-                            recipient_wallet = proposal.recipient_wallet;
-                            votes_for = proposal.votes_for;
-                            votes_against = proposal.votes_against;
-                            voters = proposal.voters;
-                            is_executed = true;
-                        };
+                        treasury_balance -= proposal.amount_requested;
+                        let updated = { proposal with is_executed = true };
                         proposals.put(proposalId, updated);
                     };
                 };

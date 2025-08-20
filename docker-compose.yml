@@ -12,7 +12,7 @@ services:
   #    - dfx deploy                       # Deploy canister
   #    - dfx canister call ...            # Interaksi dengan canister
   dfx-replica:
-    image: dfinity/sdk
+    image: dfinity/ic-build
     container_name: aegis-dfx-replica
     ports:
       # Port ini digunakan oleh replika lokal IC.

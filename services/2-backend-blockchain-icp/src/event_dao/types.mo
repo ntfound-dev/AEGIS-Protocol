@@ -1,12 +1,15 @@
+// src/types.mo
 import Principal "mo:base/Principal";
 
-type ValidatedEventData = {
-  event_type: Text;
-  severity: Text;
-  details_json: Text;
-};
+module Types {
+  public type ValidatedEventData = {
+    event_type: Text;
+    severity: Text;
+    details_json: Text;
+  };
 
-type InitArgs = {
-  event_data: ValidatedEventData;
-  factory_principal: Principal;
+  public type InitArgs = {
+    event_data: ValidatedEventData;
+    factory_principal: Principal;
+  };
 };

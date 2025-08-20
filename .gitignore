@@ -1,28 +1,31 @@
-# Lingkungan Python
-venv/
-__pycache__/
-*.pyc
-
-# Kunci & Variabel Lingkungan (SANGAT PENTING UNTUK KEAMANAN)
-.env
-*.pem
-
-# Folder hasil build dari DFINITY SDK (ICP)
+# dfx & local replica
 .dfx/
+.dfx-local/
+# jangan commit file identity / key
+.identity/
+*.pem
+*.p12
 
-# File log
+# artefak build / target
+target/
+build/
+out/
+
+# OS / editor
+.vscode/
+.idea/
 *.log
-
-# File sistem operasi
-.DS_Store
+*.swp
 Thumbs.db
 
-# node modules
+# node / python
 node_modules/
+__pycache__/
 
-# VS Code settings
-.vscode/
+# env & secrets
+.env
+.env.local
+secrets.json
 
-# Mac / Linux junk
-.DS_Store
-*.log
+# optional: file canister ids lokal (biasanya tidak perlu di repo remote)
+.dfx/local/canister_ids.json
