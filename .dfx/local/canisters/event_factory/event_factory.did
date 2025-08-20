@@ -1,0 +1,16 @@
+type ValidatedEventData = 
+ record {
+   details_json: text;
+   event_type: text;
+   severity: text;
+ };
+type EventFactory = 
+ service {
+   declare_event: (eventData: ValidatedEventData) -> (DeclareEventResult);
+ };
+type DeclareEventResult = 
+ variant {
+   err: text;
+   ok: principal;
+ };
+service : (vault_id: principal) -> EventFactory

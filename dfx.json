@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "dependencies": {
+    "mo:base": "latest"
+  },
+  "canisters": {
+    "event_factory": {
+      "type": "motoko",
+      "main": "src/event_factory/main.mo",
+      "dependencies": ["event_dao"]
+    },
+    "event_dao": {
+      "type": "motoko",
+      "main": "src/event_dao/main.mo"
+      
+    },
+    "did_sbt_ledger": {
+      "type": "motoko",
+      "main": "src/did_sbt_ledger/main.mo"
+    },
+    "insurance_vault": {
+      "type": "motoko",
+      "main": "src/insurance_vault/main.mo"
+    }
+  },
+  "defaults": {
+    "build": {
+      "packtool": "mops sources"
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:4943",
+      "type": "ephemeral"
+    }
+  }
+}

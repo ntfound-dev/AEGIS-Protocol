@@ -1,0 +1,14 @@
+type InsuranceVault = service {
+  add_funder : (principal) -> (Result);
+  fund_vault : (nat) -> (Result);
+  get_authorized_funders : () -> (vec principal) query;
+  get_total_liquidity : () -> (nat) query;
+  release_initial_funding : (principal, ValidatedEventData) -> (Result);
+};
+type Result = variant { ok : text; err : text };
+type ValidatedEventData = record {
+  details_json : text;
+  severity : text;
+  event_type : text;
+};
+service : InsuranceVault

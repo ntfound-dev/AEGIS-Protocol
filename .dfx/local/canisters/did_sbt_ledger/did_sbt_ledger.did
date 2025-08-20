@@ -1,0 +1,33 @@
+type Time = int;
+type SBT = 
+ record {
+   badge_id: nat;
+   badge_type: text;
+   event_name: text;
+   issued_at: Time;
+   issuer: principal;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok: text;
+ };
+type DID_SBT_Ledger = 
+ service {
+   authorize_minter: (minter_principal: principal) -> (Result);
+   get_did: (owner: principal) -> (opt DIDProfile) query;
+   get_sbts: (owner: principal) -> (vec SBT) query;
+   mint_sbt: (recipient: principal, event_name: text, badge_type: text) ->
+    (Result);
+   register_did: (name: text, entity_type: text, contact_info: text) ->
+    (text);
+ };
+type DIDProfile = 
+ record {
+   contact_info: text;
+   entity_type: text;
+   name: text;
+   owner: principal;
+   registration_date: Time;
+ };
+service : (init_admin: principal) -> DID_SBT_Ledger
