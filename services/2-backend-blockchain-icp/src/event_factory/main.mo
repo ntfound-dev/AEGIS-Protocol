@@ -4,7 +4,7 @@ import Result "mo:base/Result";
 import Error "mo:base/Error";
 import Debug "mo:base/Debug";
 import EventDAO "canister:event_dao";
-import InsuranceVault "canister:insurance_vault";
+import InsuranceVault "canister:insurance_vault"; 
 import Types "types";
 
 persistent actor class EventFactory() = this { 
