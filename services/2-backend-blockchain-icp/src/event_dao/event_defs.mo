@@ -1,14 +1,34 @@
-// src/event_dao/event_defs.mo
 import TrieMap "mo:base/TrieMap";
 import Principal "mo:base/Principal";
 import Nat "mo:base/Nat";
-import Hash "mo:base/Hash";
 
 module EventDefs {
-  // Fallback hash untuk Nat menggunakan Hash.hash pada nilai Nat langsung.
-  // Mengembalikan Nat32 seperti yang dibutuhkan TrieMap.
-  public func hashNat(key: Nat): Nat32 {
-    return Hash.hash(key);
+
+  // Simple non-crypto mixing that consumes every 8-bit chunk of the Nat.
+  // Uses small constant values to avoid potential parser/LSP issues.
+
+  public func simpleHashAllBytes(n : Nat) : Nat {
+    var x = n;
+    var h = 1469598103;     // smaller offset basis
+    var prime = 1099511627; // smaller prime
+
+    if (x == 0) {
+      h := (h * prime) + 0;
+    };
+
+    while (x > 0) {
+      let b = x % 256;        // low 8 bits
+      h := (h * prime) + b;
+      x := x / 256;
+    };
+
+    h;
+  };
+
+  // Return a Nat truncated to 32 bits (mod 2^32)
+  public func hashNat(key : Nat) : Nat {
+    let h_big = simpleHashAllBytes(key);
+    h_big % 4294967296;
   };
 
   public type ProposalInfo = {
@@ -37,4 +57,4 @@ module EventDefs {
     voters: TrieMap.TrieMap<Principal, Bool>;
     is_executed: Bool;
   };
-}
+};
