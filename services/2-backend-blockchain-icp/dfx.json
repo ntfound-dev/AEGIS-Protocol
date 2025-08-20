@@ -7,7 +7,7 @@
     "event_factory": {
       "type": "motoko",
       "main": "src/event_factory/main.mo",
-      "dependencies": ["event_dao"]
+      "dependencies": ["event_dao","insurance_vault"]
     },
     "event_dao": {
       "type": "motoko",
