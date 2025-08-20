@@ -1,7 +1,0 @@
-// Version: 1.0.0
-actor {
-  stable var additional_funders : [Principal];
-  stable authorized_factory : Principal;
-  stable initial_funder : Principal;
-  stable var total_liquidity : Nat
-};
