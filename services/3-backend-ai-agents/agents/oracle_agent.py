@@ -1,99 +1,112 @@
-# File: services/3-backend-ai-agents/agents/action_agent.py
+# File: services/3-backend-ai-agents/agents/oracle_agent.py
 from uagents import Agent, Context, Model
 from uagents.setup import fund_agent_if_low
-from ic.agent import Agent as ICAgent
-from ic.client import Client
-from ic.identity import Identity
-from ic.candid import encode, decode
-import os
 import json
-import time # Import library 'time' untuk menunggu
+import time
 
-class ValidatedEvent(Model):
-    event_type: str
-    severity: str
-    details_json: str
-    confidence_score: float
+class RawEarthquakeData(Model):
+    source: str
+    magnitude: float
+    location: str
+    lat: float
+    lon: float
+    timestamp: int
 
-ICP_URL = os.getenv("ICP_URL", "http://dfx-replica:4943")
-IDENTITY_PEM_PATH = "/app/identity.pem"
-CANISTER_IDS_PATH = "/app/canister_ids.json"
+class WebTriggerRequest(Model):
+    source: str
+    magnitude: float
+    location: str
+    lat: float
+    lon: float
+    timestamp: int
 
-# --- PERBAIKAN UTAMA: Fungsi ini sekarang lebih sabar ---
-def get_canister_id(name: str) -> str:
-    # Coba selama 30 detik untuk menunggu file dibuat
-    timeout = 30 
-    start_time = time.time()
-    while not os.path.exists(CANISTER_IDS_PATH) or os.path.isdir(CANISTER_IDS_PATH):
-        if time.time() - start_time > timeout:
-            print(f"Error: Timed out waiting for {CANISTER_IDS_PATH} to be created.")
-            return None
-        print(f"Waiting for {CANISTER_IDS_PATH} to be created...")
-        time.sleep(2) # Tunggu 2 detik sebelum mencoba lagi
-    
-    with open(CANISTER_IDS_PATH, "r") as f:
-        data = json.load(f)
-    
-    canister_info = data.get(name)
-    if not canister_info:
-        print(f"Error: Canister '{name}' not found in canister_ids.json")
-        return None
-        
-    return canister_info.get("local")
+class WebTriggerResponse(Model):
+    status: str
+    message: str
 
+VALIDATOR_SWARM_ADDRESS = "agent1qwzkf66hexgnx2e4qvyehqner79cm2sxreacrqeh47daglpqw4tygrjwynq"
 
-action_agent = Agent(
-    name="action_agent_bridge",
-    port=8003,
-    seed="action_agent_bridge_secret_seed_phrase_11223",
-    endpoint=["http://action-agent:8003/submit"],
+oracle_agent = Agent(
+    name="oracle_agent_beta",
+    port=8001,
+    seed="oracle_agent_beta_secret_seed_phrase_45678",
+    endpoint=["http://oracle-agent:8001/submit"],
 )
 
-fund_agent_if_low(str(action_agent.wallet.address()))
+fund_agent_if_low(str(oracle_agent.wallet.address()))
 
-def call_icp_declare_event(event: ValidatedEvent):
-    event_factory_canister_id = get_canister_id("event_factory")
-    if not event_factory_canister_id:
-        return None
+def validate_earthquake_data(data: dict) -> bool:
+    """Validasi data gempa bumi"""
+    required_fields = ["source", "magnitude", "location", "lat", "lon", "timestamp"]
+    
+    for field in required_fields:
+        if field not in data:
+            return False
+    
+    # Validasi magnitude
+    if not isinstance(data["magnitude"], (int, float)) or data["magnitude"] <= 0:
+        return False
+    
+    # Validasi koordinat
+    if not isinstance(data["lat"], (int, float)) or not isinstance(data["lon"], (int, float)):
+        return False
+    
+    return True
 
+@oracle_agent.on_message(model=RawEarthquakeData)
+async def handle_agent_message(ctx: Context, sender: str, msg: RawEarthquakeData):
+    ctx.logger.info(f"Received agent message from {sender}: {msg.location}")
+    ctx.logger.info(f"Forwarding to Validator Agent...")
+    await ctx.send(VALIDATOR_SWARM_ADDRESS, msg)
+
+@oracle_agent.on_rest_post("/process_earthquake", WebTriggerRequest, WebTriggerResponse)
+async def handle_web_request(ctx: Context, request: WebTriggerRequest):
     try:
-        identity = Identity.from_pem(open(IDENTITY_PEM_PATH, "r").read())
-        client = Client(url=ICP_URL)
-        ic_agent = ICAgent(identity=identity, client=client)
+        ctx.logger.info(f"Received web trigger with data: {request}")
         
-        arg = [{
-            "event_type": event.event_type,
-            "severity": event.severity,
-            "details_json": event.details_json,
-        }]
+        # Validasi data
+        data_dict = {
+            "source": request.source,
+            "magnitude": request.magnitude,
+            "location": request.location,
+            "lat": request.lat,
+            "lon": request.lon,
+            "timestamp": request.timestamp
+        }
         
-        encoded_arg = encode(arg)
-
-        print(f"Calling 'declare_event' on canister {event_factory_canister_id}...")
+        if not validate_earthquake_data(data_dict):
+            return WebTriggerResponse(
+                status="error",
+                message="Invalid earthquake data format"
+            )
         
-        response = ic_agent.update_raw(
-            canister_id=event_factory_canister_id,
-            method_name="declare_event",
-            arg=encoded_arg
+        # Konversi ke RawEarthquakeData
+        earthquake_data = RawEarthquakeData(**data_dict)
+        
+        # Kirim ke Validator Agent
+        ctx.logger.info(f"Forwarding earthquake data to Validator Agent...")
+        await ctx.send(VALIDATOR_SWARM_ADDRESS, earthquake_data)
+        
+        return WebTriggerResponse(
+            status="success",
+            message="Earthquake data received and forwarded to Validator Agent"
         )
         
-        result = decode(response)
-        print(f"Successfully created Event DAO. Canister ID: {result[0]['Ok']}")
-        return result
-        
     except Exception as e:
-        print(f"Error calling ICP canister: {e}")
-        return None
+        ctx.logger.error(f"Error processing earthquake data: {e}")
+        return WebTriggerResponse(
+            status="error",
+            message=f"Internal server error: {str(e)}"
+        )
 
-@action_agent.on_message(model=ValidatedEvent)
-async def handle_validated_event(ctx: Context, sender: str, msg: ValidatedEvent):
-    ctx.logger.info(f"Consensus reached! Received validated event from {sender}.")
-    ctx.logger.info(f"Details: {msg.details_json}")
-    
-    call_icp_declare_event(msg)
+@oracle_agent.on_rest_get("/health")
+async def health_check(ctx: Context):
+    return {
+        "status": "healthy",
+        "agent": "oracle_agent_beta",
+        "timestamp": time.time()
+    }
 
 if __name__ == "__main__":
-    if not os.path.exists(IDENTITY_PEM_PATH):
-        print(f"Error: Identity file not found at {IDENTITY_PEM_PATH}")
-    else:
-        action_agent.run()
+    print("🚀 Starting Oracle Agent on port 8001...")
+    oracle_agent.run()

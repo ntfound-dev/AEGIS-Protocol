@@ -106,6 +106,14 @@ async def handle_web_request(ctx: Context, request: WebTriggerRequest):
         ctx.logger.error(f"Error processing web request: {e}")
         return WebTriggerResponse(status="error", message=str(e))
 
+@validator_agent.on_rest_get("/health")
+async def health_check(ctx: Context):
+    return {
+        "status": "healthy",
+        "agent": "validator_agent_alpha",
+        "timestamp": time.time()
+    }
 
 if __name__ == "__main__":
+    print("🚀 Starting Validator Agent on port 8002...")
     validator_agent.run()

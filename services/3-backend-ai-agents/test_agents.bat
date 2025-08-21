@@ -42,7 +42,7 @@ timeout /t 5 /nobreak >nul
 
 echo.
 echo [5] Running tests...
-python test_agents.py
+python test_agents_fixed.py
 
 echo.
 echo [6] Press any key to stop all agents...
