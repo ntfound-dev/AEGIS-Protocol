@@ -1,6 +1,9 @@
 # Menggunakan image dasar Python yang ringan dan modern
 FROM python:3.10-slim
 
+# Install netcat for service health checks
+RUN apt-get update && apt-get install -y netcat-traditional && rm -rf /var/lib/apt/lists/*
+
 # Menetapkan direktori kerja di dalam container
 WORKDIR /app
 
@@ -15,6 +18,12 @@ RUN pip install --upgrade pip \
 
 # Salin semua kode agen dan file lainnya ke dalam container
 COPY . .
+
+# Make scripts executable
+RUN chmod +x init_script.sh auto_deploy.sh
+
+# Set the init script as entrypoint
+ENTRYPOINT ["./init_script.sh"]
 
 # Perintah default
 CMD ["python", "agents/oracle_agent.py"]

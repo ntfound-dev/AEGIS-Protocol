@@ -3,14 +3,8 @@
 
 services:
   # Layanan ini menyediakan lingkungan (replika lokal) untuk Internet Computer (IC).
-  # Perintah dfx (start, deploy, call) perlu dijalankan secara manual di dalam container ini.
-  #
-  # Langkah-langkah penggunaan manual:
-  # 1. Masuk ke container: docker exec -it aegis-dfx-replica bash
-  # 2. Di dalam container, jalankan:
-  #    - dfx start --background --clean   # Memulai replika lokal
-  #    - dfx deploy                       # Deploy canister
-  #    - dfx canister call ...            # Interaksi dengan canister
+  # Auto-deploy mode: Automatically starts replica and deploys canisters
+  # Manual mode: Requires manual deployment via docker exec commands
   dfx-replica:
     image: dfinity/ic-build
     container_name: aegis-dfx-replica
@@ -21,8 +15,25 @@ services:
     volumes:
       # Mount source code backend blockchain ke dalam working directory.
       - ./services/2-backend-blockchain-icp:/work
-    # Perintah ini menjaga container tetap berjalan agar bisa diakses.
-    command: tail -f /dev/null
+      # Mount the auto-deploy script
+      - ./services/3-backend-ai-agents/auto_deploy.sh:/work/auto_deploy.sh
+    environment:
+      # Set to 'auto' for automatic deployment, 'manual' for manual deployment
+      - DEPLOY_MODE=${DEPLOY_MODE:-auto}
+    # Auto-deploy mode: automatically start and deploy
+    # Manual mode: keep container running for manual deployment
+    command: >
+      bash -c "
+        chmod +x /work/auto_deploy.sh;
+        if [ \"$$DEPLOY_MODE\" = \"auto\" ]; then
+          echo '🚀 Starting automatic deployment...';
+          /work/auto_deploy.sh;
+        else
+          echo '📋 Manual deployment mode. Use: docker exec -it aegis-dfx-replica bash';
+          echo '   Then run: dfx start --background --host 0.0.0.0 && dfx deploy';
+          tail -f /dev/null;
+        fi
+      "
 
   # === Layanan Agen AI ===
   # Catatan: Semua agen di bawah ini bergantung pada 'dfx-replica'
@@ -67,6 +78,8 @@ services:
     depends_on:
       - dfx-replica
     restart: on-failure
+    networks:
+      - aegis-net
 
   action-agent:
     build:
@@ -85,3 +98,9 @@ services:
     depends_on:
       - dfx-replica
     restart: on-failure
+    networks:
+      - aegis-net
+
+networks:
+  aegis-net:
+    driver: bridge

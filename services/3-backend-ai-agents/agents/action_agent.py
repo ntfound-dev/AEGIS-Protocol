@@ -16,6 +16,36 @@ ICP_URL = os.getenv("ICP_URL", "http://dfx-replica:4943")
 IDENTITY_PEM_PATH = "/app/identity.pem"
 CANISTER_IDS_PATH = "/app/canister_ids.json"
 
+def wait_for_canister_deployment(timeout_seconds: int = 300) -> bool:
+    """Wait for canister deployment to complete with proper timeout"""
+    print(f"Waiting for canister deployment (timeout: {timeout_seconds}s)...")
+    
+    start_time = time.time()
+    while time.time() - start_time < timeout_seconds:
+        # Check if canister_ids.json exists and is not a directory
+        if os.path.exists(CANISTER_IDS_PATH) and not os.path.isdir(CANISTER_IDS_PATH):
+            try:
+                # Verify the file is valid JSON and contains expected structure
+                with open(CANISTER_IDS_PATH, "r") as f:
+                    data = json.load(f)
+                
+                # Check if it contains at least one canister with local deployment
+                for canister_name, canister_info in data.items():
+                    if isinstance(canister_info, dict) and "local" in canister_info:
+                        print(f"✅ Canister deployment detected! Found {canister_name}")
+                        return True
+                        
+                print("📄 canister_ids.json exists but no local deployments found yet...")
+                        
+            except (json.JSONDecodeError, Exception) as e:
+                print(f"📄 canister_ids.json exists but invalid: {e}")
+        
+        print(f"⏳ Waiting for canister deployment... ({int(time.time() - start_time)}s/{timeout_seconds}s)")
+        time.sleep(5)  # Check every 5 seconds
+    
+    print("❌ Timeout waiting for canister deployment!")
+    return False
+
 def get_canister_id(name: str) -> str:
     """Get canister ID if available"""
     if not os.path.exists(CANISTER_IDS_PATH):
@@ -120,4 +150,9 @@ async def health_check(ctx: Context):
 
 if __name__ == "__main__":
     print("🚀 Starting Action Agent on port 8003...")
+    
+    # Wait for canister deployment before starting the agent
+    if not wait_for_canister_deployment():
+        print("⚠️  Starting agent without canister deployment - ICP integration will be disabled")
+    
     action_agent.run()
