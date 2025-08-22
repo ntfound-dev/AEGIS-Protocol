@@ -48,11 +48,7 @@ Berikut adalah detail dari agen-agen yang berjalan di Fetch.ai, sesuai dengan pe
     * *Alamat:* Alamat akan dihasilkan saat agen dijalankan.
     * *Tugas:* Menerima hasil konsensus dan memanggil smart contract di Internet Computer.
 
----
 
-Oke, ini versi README kamu yang sudah aku perbarui, termasuk langkah penggunaan `dos2unix` untuk WSL dan penyesuaian path terbaru pada `generate-keys.sh`:
-
----
 
 ## 🚀 Cara Menjalankan Proyek (Pengembangan Lokal)
 
