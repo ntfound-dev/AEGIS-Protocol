@@ -1,0 +1,87 @@
+# docker-compose.yml (Versi Revisi & Stabil)
+# Jalankan dengan 'docker-compose up -d --build'
+
+services:
+  # Layanan ini menyediakan lingkungan (replika lokal) untuk Internet Computer (IC).
+  # Perintah dfx (start, deploy, call) perlu dijalankan secara manual di dalam container ini.
+  #
+  # Langkah-langkah penggunaan manual:
+  # 1. Masuk ke container: docker exec -it aegis-dfx-replica bash
+  # 2. Di dalam container, jalankan:
+  #    - dfx start --background --clean   # Memulai replika lokal
+  #    - dfx deploy                       # Deploy canister
+  #    - dfx canister call ...            # Interaksi dengan canister
+  dfx-replica:
+    image: dfinity/ic-build
+    container_name: aegis-dfx-replica
+    ports:
+      # Port ini digunakan oleh replika lokal IC.
+      - "4943:4943"
+    working_dir: /work
+    volumes:
+      # Mount source code backend blockchain ke dalam working directory.
+      - ./services/2-backend-blockchain-icp:/work
+    # Perintah ini menjaga container tetap berjalan agar bisa diakses.
+    command: tail -f /dev/null
+
+  # === Layanan Agen AI ===
+  # Catatan: Semua agen di bawah ini bergantung pada 'dfx-replica'
+  # dan akan restart jika terjadi kegagalan.
+
+  oracle-agent:
+    build:
+      context: ./services/3-backend-ai-agents
+      dockerfile: Dockerfile
+    container_name: aegis-oracle-agent
+    command: python agents/oracle_agent.py
+    ports:
+      - "8001:8001"
+    environment:
+      # Variabel ini akan diisi setelah 'dfx deploy' berhasil.
+      - EVENT_FACTORY_CANISTER_ID=${EVENT_FACTORY_CANISTER_ID}
+      # Mengarahkan URL ICP ke layanan Docker dfx-replica.
+      - ICP_URL=http://dfx-replica:4943
+    volumes:
+      # Mount identity.pem untuk otentikasi.
+      - ./services/3-backend-ai-agents/identity.pem:/app/identity.pem
+      # Mount seluruh direktori .dfx/local agar canister_ids.json dan file lainnya tersedia.
+      - ./services/2-backend-blockchain-icp/.dfx/local:/app/dfx-local
+    depends_on:
+      - dfx-replica
+    restart: on-failure
+
+  validator-agent:
+    build:
+      context: ./services/3-backend-ai-agents
+      dockerfile: Dockerfile
+    container_name: aegis-validator-agent
+    command: python agents/validator_agent.py
+    ports:
+      - "8002:8002"
+    environment:
+      - EVENT_FACTORY_CANISTER_ID=${EVENT_FACTORY_CANISTER_ID}
+      - ICP_URL=http://dfx-replica:4943
+    volumes:
+      - ./services/3-backend-ai-agents/identity.pem:/app/identity.pem
+      - ./services/2-backend-blockchain-icp/.dfx/local:/app/dfx-local
+    depends_on:
+      - dfx-replica
+    restart: on-failure
+
+  action-agent:
+    build:
+      context: ./services/3-backend-ai-agents
+      dockerfile: Dockerfile
+    container_name: aegis-action-agent
+    command: python agents/action_agent.py
+    ports:
+      - "8003:8003"
+    environment:
+      - EVENT_FACTORY_CANISTER_ID=${EVENT_FACTORY_CANISTER_ID}
+      - ICP_URL=http://dfx-replica:4943
+    volumes:
+      - ./services/3-backend-ai-agents/identity.pem:/app/identity.pem
+      - ./services/2-backend-blockchain-icp/.dfx/local:/app/dfx-local
+    depends_on:
+      - dfx-replica
+    restart: on-failure
