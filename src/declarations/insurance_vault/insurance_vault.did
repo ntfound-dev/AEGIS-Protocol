@@ -1,0 +1,29 @@
+type ValidatedEventData = 
+ record {
+   details_json: text;
+   event_type: text;
+   severity: text;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok: text;
+ };
+type InsuranceVault = 
+ service {
+   /// Menambahkan principal baru ke dalam daftar funder tambahan yang sah.
+   /// Hanya bisa dipanggil oleh admin canister.
+   add_funder: (funder_to_add: principal) -> (Result);
+   /// Menyetorkan dana ke dalam vault.
+   /// Hanya bisa dipanggil oleh funder yang sudah diotorisasi.
+   fund_vault: (amount: nat) -> (Result);
+   /// Mengembalikan daftar gabungan semua principal yang diizinkan untuk mendanai vault.
+   get_authorized_funders: () -> (vec principal) query;
+   /// Mengembalikan jumlah total dana yang tersimpan di dalam vault.
+   get_total_liquidity: () -> (nat) query;
+   /// Mencairkan dana awal dari vault ke sebuah event_dao yang baru.
+   /// Hanya bisa dipanggil oleh event_factory yang sah.
+   release_initial_funding: (dao_canister_id: principal, event_data:
+    ValidatedEventData) -> (Result);
+ };
+service : (init_factory_id: principal, init_funder_id: principal, init_admin_id: principal) -> InsuranceVault

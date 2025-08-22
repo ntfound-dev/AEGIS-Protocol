@@ -1,4 +1,4 @@
-// File: src/event_dao/main.mo
+// File: src/event_dao/main.mo (Versi Final yang Sudah Diperbaiki)
 
 import TrieMap "mo:base/TrieMap";
 import Buffer "mo:base/Buffer";
@@ -7,20 +7,17 @@ import Principal "mo:base/Principal";
 import Nat "mo:base/Nat";
 import Nat32 "mo:base/Nat32";
 import Hash "mo:base/Hash";
-
-import EventDefs "event_defs"; 
+import Debug "mo:base/Debug"; // --- PERBAIKAN --- Ditambahkan untuk 'trap'
+import EventDefs "event_defs";
+import SbtLedger "canister:did_sbt_ledger";
 
 persistent actor EventDAO {
 
-    // --- State Variables ---
+    // --- State Variables (Tidak ada perubahan) ---
     var treasury_balance : Nat = 0;
 
-    // Custom hash for Nat (avoid deprecated Nat.hash)
-    func customNatHash(n : Nat) : Hash.Hash {
-        Nat32.fromNat(n % 4294967296);
-    };
+    func customNatHash(n : Nat) : Hash.Hash { Nat32.fromNat(n % 4294967296); };
 
-    // TrieMap (transient: auto-reset on upgrade)
     transient var proposals : TrieMap.TrieMap<Nat, EventDefs.Proposal> =
         TrieMap.TrieMap<Nat, EventDefs.Proposal>(Nat.equal, customNatHash);
 
@@ -28,11 +25,10 @@ persistent actor EventDAO {
         TrieMap.TrieMap<Principal, Nat>(Principal.equal, Principal.hash);
 
     var nextProposalId : Nat = 0;
-
     transient var event_details : ?Types.ValidatedEventData = null;
     transient var factory_principal : ?Principal = null;
 
-    // --- Initialization ---
+    // --- PERBAIKAN --- Mengembalikan isi fungsi yang sebelumnya kosong ---
     public shared func initialize(args: Types.InitArgs) : async Text {
         if (factory_principal != null) {
             return "Already initialized.";
@@ -42,7 +38,6 @@ persistent actor EventDAO {
         return "Initialized.";
     };
 
-    // --- Queries ---
     public shared query func get_event_details() : async ?Types.ValidatedEventData {
         return event_details;
     };
@@ -65,7 +60,6 @@ persistent actor EventDAO {
         return Buffer.toArray(results);
     };
 
-    // --- Proposals ---
     public shared(msg) func submit_proposal(
         title: Text,
         description: Text,
@@ -73,12 +67,7 @@ persistent actor EventDAO {
         recipient: Principal
     ) : async Text {
         let pid = nextProposalId;
-
-        let voters_map = TrieMap.TrieMap<Principal, Bool>(
-            Principal.equal,
-            Principal.hash
-        );
-
+        let voters_map = TrieMap.TrieMap<Principal, Bool>(Principal.equal, Principal.hash);
         let proposal : EventDefs.Proposal = {
             id = pid;
             proposer = msg.caller;
@@ -91,56 +80,73 @@ persistent actor EventDAO {
             voters = voters_map;
             is_executed = false;
         };
-
         proposals.put(pid, proposal);
         nextProposalId += 1;
-
         return "Proposal submitted with ID: " # Nat.toText(pid);
     };
+    // --- AKHIR DARI FUNGSI YANG DIKEMBALIKAN ISINYA ---
 
-    // --- Donations ---
-    public shared(msg) func donate(amount: Nat) : async Text {
-        switch (donors.get(msg.caller)) {
-            case (null) { donors.put(msg.caller, amount); };
-            case (?old) { donors.put(msg.caller, old + amount); };
-        };
-        treasury_balance += amount;
-        return "Donation received.";
-    };
-
-    // --- Voting ---
-    public shared(msg) func vote(
+    public shared(msg) func donateAndVote(
+        amount: Nat,
         proposalId: EventDefs.ProposalId,
         in_favor: Bool
     ) : async Text {
-        if (donors.get(msg.caller) == null) {
-            return "Only donors can vote.";
+        _donate(msg.caller, amount);
+        let vote_msg = await _vote(msg.caller, proposalId, in_favor); // --- PERBAIKAN --- Menambahkan 'await'
+        if (vote_msg != "Vote cast successfully.") {
+            Debug.trap("Voting failed: " # vote_msg); // --- PERBAIKAN --- Menggunakan Debug.trap
         };
 
+        let event_name = switch(event_details) {
+            case (?details) { details.event_type };
+            case (null) { "Unknown Event" };
+        };
+
+        let mint_result = await SbtLedger.mint_sbt(
+            msg.caller,
+            event_name,
+            "Donatur & Partisipan"
+        );
+        
+        switch (mint_result) {
+          case (#ok(_mint_message)) {
+            return "Thank you! Donation and vote have been recorded. Your participation SBT has been minted.";
+          };
+          case (#err(error_message)) {
+            Debug.trap("FATAL: Your donation and vote were recorded, but SBT minting failed: " # error_message); // --- PERBAIKAN --- Menggunakan Debug.trap
+          };
+        };
+    };
+
+    private func _donate(caller: Principal, amount: Nat) {
+        switch (donors.get(caller)) {
+            case (null) { donors.put(caller, amount); };
+            case (?old) { donors.put(caller, old + amount); };
+        };
+        treasury_balance += amount;
+    };
+
+    // --- PERBAIKAN --- Menambahkan 'async' pada signature fungsi _vote
+    private func _vote(caller: Principal, proposalId: EventDefs.ProposalId, in_favor: Bool) : async Text {
         switch (proposals.get(proposalId)) {
             case (null) { return "Proposal not found."; };
             case (?proposal) {
-                if (proposal.voters.get(msg.caller) != null) {
+                if (proposal.voters.get(caller) != null) {
                     return "You have already voted on this proposal.";
                 };
-
-                proposal.voters.put(msg.caller, true);
-
+                proposal.voters.put(caller, true);
                 let updated = if (in_favor) {
                     { proposal with votes_for = proposal.votes_for + 1 }
                 } else {
                     { proposal with votes_against = proposal.votes_against + 1 }
                 };
-
                 proposals.put(proposalId, updated);
-
-                await try_execute_proposal(proposalId);
+                ignore try_execute_proposal(proposalId);
                 return "Vote cast successfully.";
             };
         };
     };
 
-    // --- Execution ---
     private func try_execute_proposal(proposalId: EventDefs.ProposalId) : async () {
         switch (proposals.get(proposalId)) {
             case (?proposal) {

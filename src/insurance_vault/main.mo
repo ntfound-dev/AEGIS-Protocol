@@ -1,89 +1,131 @@
-// Hapus import Buffer karena tidak digunakan lagi
+// File: src/insurance_vault/main.mo
+
 import Principal "mo:base/Principal";
 import Nat "mo:base/Nat";
 import Array "mo:base/Array";
 import R "mo:base/Result";
+import _Debug "mo:base/Debug"; 
 
-persistent actor class InsuranceVault(factory_id: Principal, funder_id: Principal) {
+persistent actor class InsuranceVault(init_factory_id: Principal, init_funder_id: Principal, init_admin_id: Principal) {
 
     // ---- Type Aliases ----
     public type Result<T, E> = R.Result<T, E>;
 
     // ---- Data Types ----
+    // Tipe ini digunakan oleh event_factory saat memanggil release_initial_funding
     public type ValidatedEventData = {
         event_type: Text;
         severity: Text;
         details_json: Text;
     };
 
-    // ---- State ----
-    // Semua state harus dideklarasikan 'stable' secara eksplisit
-     var total_liquidity: Nat = 0;
+    // =====================================================================
+    //                            STATE
+    // =====================================================================
 
-     let authorized_factory: Principal = factory_id;
+    // Total dana yang tersimpan di dalam vault.
+    var total_liquidity: Nat = 0;
 
-    // --- PERBAIKAN STRUKTUR STATE ---
-    // Pisahkan funder awal (immutable) dari funder tambahan (mutable)
-    // untuk mematuhi semua aturan compiler.
-     let initial_funder: Principal = funder_id;
-     var additional_funders: [Principal] = [];
+    // Principal ID dari event_factory yang sah.
+    // Ditetapkan saat canister dibuat dan tidak bisa diubah (immutable).
+    let authorized_factory: Principal = init_factory_id;
+
+    // Funder pertama yang diotorisasi.
+    // Ditetapkan saat canister dibuat dan tidak bisa diubah (immutable).
+    let initial_funder: Principal = init_funder_id;
+
+    // Daftar funder tambahan yang bisa diotorisasi nanti.
+    var additional_funders: [Principal] = [];
+    
+    // Admin canister, yang bisa menambahkan funder tambahan.
+    // Diatur ke principal yang men-deploy canister ini.
+    let admin: Principal = init_admin_id;
 
 
-    // ---- Internal Helpers ----
-    private func arrayContains<T>(arr: [T], val: T, eq: (T, T) -> Bool): Bool {
+    // =====================================================================
+    //                         INTERNAL HELPERS
+    // =====================================================================
+
+    // Fungsi helper untuk memeriksa apakah sebuah principal ada di dalam array.
+    private func arrayContains(arr: [Principal], val: Principal): Bool {
         for (item in arr.vals()) {
-            if (eq(item, val)) { return true };
+            if (Principal.equal(item, val)) { return true };
         };
-        false
+        return false;
     };
 
-    // Fungsi helper ini sekarang harus memeriksa kedua variabel funder
+    // Memeriksa apakah sebuah principal adalah funder yang sah (baik initial maupun additional).
     private func isAuthorizedFunder(who: Principal): Bool {
-        Principal.equal(who, initial_funder) or 
-        arrayContains<Principal>(additional_funders, who, Principal.equal)
+        Principal.equal(who, initial_funder) or
+        arrayContains(additional_funders, who)
     };
 
+    // Menentukan jumlah dana awal berdasarkan tingkat keparahan event.
     private func determine_payout(event_data: ValidatedEventData): Nat {
         switch (event_data.severity) {
-            case ("Critical") { 2_000_000 };
-            case ("High")     {   500_000 };
-            case ("Medium")   {    50_000 };
-            case (_)          {         0 };
+            case ("Tinggi")   { 100_000_000 }; // Contoh payout
+            case ("Sedang")   {  50_000_000 };
+            case ("Rendah")   {  10_000_000 };
+            case (_)          {           0 };
         }
     };
 
-    // ---- Public API ----
+    // =====================================================================
+    //                            PUBLIC API
+    // =====================================================================
 
+    /// Menambahkan principal baru ke dalam daftar funder tambahan yang sah.
+    /// Hanya bisa dipanggil oleh admin canister.
+    public shared(msg) func add_funder(funder_to_add: Principal): async Result<Text, Text> {
+        if (msg.caller != admin) {
+            return #err("Unauthorized: only the admin can add new funders.");
+        };
+        
+        if (isAuthorizedFunder(funder_to_add)) {
+            return #ok("Funder already authorized.");
+        };
+        
+        additional_funders := Array.append<Principal>(additional_funders, [funder_to_add]);
+        return #ok("Funder added successfully.");
+    };
+
+    /// Menyetorkan dana ke dalam vault.
+    /// Hanya bisa dipanggil oleh funder yang sudah diotorisasi.
     public shared(msg) func fund_vault(amount: Nat): async Result<Text, Text> {
         if (amount == 0) {
-            return #err("Amount must be > 0");
+            return #err("Amount must be greater than 0.");
         };
         if (not isAuthorizedFunder(msg.caller)) {
-            return #err("Unauthorized: caller is not in the authorized funders list.");
+            return #err("Unauthorized: caller is not an authorized funder.");
         };
 
         total_liquidity += amount;
         return #ok("Vault funded successfully. New balance: " # Nat.toText(total_liquidity));
     };
 
+    /// Mencairkan dana awal dari vault ke sebuah event_dao yang baru.
+    /// Hanya bisa dipanggil oleh event_factory yang sah.
     public shared(msg) func release_initial_funding(
         dao_canister_id: Principal,
         event_data: ValidatedEventData
     ): async Result<Text, Text> {
         if (msg.caller != authorized_factory) {
-            return #err("Unauthorized: only the EventFactory can call this function.");
+            return #err("Unauthorized: only the authorized EventFactory can call this function.");
         };
 
         let payout_amount = determine_payout(event_data);
 
         if (payout_amount == 0) {
-            return #ok("Event severity does not meet the policy trigger for a payout.");
+            return #ok("Event severity does not meet policy for a payout.");
         };
         if (total_liquidity < payout_amount) {
-            return #err("Insufficient liquidity in the vault to cover the payout.");
+            return #err("Insufficient liquidity in the vault.");
         };
 
         total_liquidity -= payout_amount;
+
+        // Di dunia nyata, di sini akan ada panggilan inter-canister untuk mentransfer dana.
+        // Untuk saat ini, kita hanya mencatat pengurangannya.
 
         return #ok(
             "Successfully released " # Nat.toText(payout_amount)
@@ -91,29 +133,15 @@ persistent actor class InsuranceVault(factory_id: Principal, funder_id: Principa
         );
     };
 
+    // ---- Queries ----
+
+    /// Mengembalikan jumlah total dana yang tersimpan di dalam vault.
     public query func get_total_liquidity(): async Nat {
         total_liquidity
     };
 
-    // Fungsi query ini sekarang harus menggabungkan kedua daftar funder
+    /// Mengembalikan daftar gabungan semua principal yang diizinkan untuk mendanai vault.
     public query func get_authorized_funders(): async [Principal] {
-        // Gabungkan funder awal dengan funder tambahan
         Array.append<Principal>([initial_funder], additional_funders)
-    };
-
-    // Fungsi add_funder sekarang hanya berinteraksi dengan 'additional_funders'
-    public shared(msg) func add_funder(p: Principal): async Result<Text, Text> {
-        if (msg.caller != authorized_factory) {
-            return #err("Unauthorized: only the EventFactory can add funders.");
-        };
-        
-        if (isAuthorizedFunder(p)) {
-            return #ok("Funder already authorized.");
-        };
-        
-        // Tambahkan ke daftar 'additional_funders'.
-        // Kita kembali menggunakan Array.append, abaikan warning performa demi correctness.
-        additional_funders := Array.append<Principal>(additional_funders, [p]);
-        return #ok("Funder added.");
     };
 };

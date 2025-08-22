@@ -1,18 +1,14 @@
 {
   "version": 1,
-  "dependencies": {
-    "mo:base": "latest"
-  },
   "canisters": {
     "event_factory": {
       "type": "motoko",
       "main": "src/event_factory/main.mo",
-      "dependencies": ["event_dao"]
+      "dependencies": ["event_dao", "insurance_vault"]
     },
     "event_dao": {
       "type": "motoko",
       "main": "src/event_dao/main.mo"
-      
     },
     "did_sbt_ledger": {
       "type": "motoko",
@@ -21,6 +17,12 @@
     "insurance_vault": {
       "type": "motoko",
       "main": "src/insurance_vault/main.mo"
+    },
+    "frontend": {
+      "type": "assets",
+      "source": [
+        "frontend/"
+      ]
     }
   },
   "defaults": {
