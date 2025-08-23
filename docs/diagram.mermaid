@@ -1,0 +1,24 @@
+graph TD
+    subgraph "Lapisan 1: Frontend (Browser Pengguna)"
+        A[<i class='fas fa-desktop'></i> UI Console <br> main.js]
+    end
+
+    subgraph "Lapisan 2: Layanan Off-Chain (Docker)"
+        B[<i class='fas fa-satellite-dish'></i> Oracle Agent <br> oracle_agent.py] -- Data Gempa Mentah --> C{<i class='fas fa-brain'></i> Validator Agent <br> validator_agent.py}
+        C -- Perintah Tervalidasi --> D[<i class='fas fa-key'></i> Action Agent Bridge <br> action_agent.py]
+    end
+
+    subgraph "Lapisan 3: On-Chain Canisters (Internet Computer)"
+        style E fill:#f9f,stroke:#333,stroke-width:2px
+        style G fill:#ccf,stroke:#333,stroke-width:2px
+        E[<i class='fa fa-industry'></i> Event Factory] -- "1. Membuat" --> G[<i class='fa fa-users'></i> Event DAO]
+        H[<i class='fa fa-university'></i> Insurance Vault] -- "2. Mendanai" --> G
+        I[<i class='fa fa-id-card'></i> DID/SBT Ledger]
+    end
+
+    %% Alur Interaksi
+    A -- "Perintah Chat: 'kirim sinyal...'" --> C
+    A -- "Aksi Pengguna (Vote/Donasi/Profil)" --> G
+    A -- "Manajemen Profil DID/SBT" --> I
+    D -- "Panggil 'declare_event'" --> E
+    G -- "Minta 'mint_sbt' setelah donasi" --> I

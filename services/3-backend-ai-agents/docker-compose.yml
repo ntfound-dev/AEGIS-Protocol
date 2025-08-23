@@ -1,24 +1,75 @@
 services:
-  oracle-agent:
-    build: .
-    container_name: aegis-oracle-agent
-    command: python agents/oracle_agent.py
-    restart: on-failure
-    network_mode: "host"
-
   validator-agent:
-    build: .
-    container_name: aegis-validator-agent
-    command: python agents/validator_agent.py
-    restart: on-failure
-    network_mode: "host"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python /app/agents/validator_agent.py
+    env_file:
+      - ../.env
+    environment:
+      - VALIDATOR_AGENT_SEED=${VALIDATOR_AGENT_SEED}
+      - ACTION_AGENT_ADDRESS=${ACTION_AGENT_ADDRESS}
+      - CANISTER_IDS_PATH=/app/dfx-local/canister_ids.json
+      - IDENTITY_PEM_PATH=/app/identity.pem
+    ports:
+      - "8002:8002"
+    restart: ${AGENT_RESTART_POLICY:-unless-stopped}
+    volumes:
+      - ./.dfx/local/canister_ids.json:/app/dfx-local/canister_ids.json:ro
+      - ./identity.pem:/app/identity.pem:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  oracle-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python /app/agents/oracle_agent.py
+    env_file:
+      - ../.env
+    environment:
+      - ORACLE_AGENT_SEED=${ORACLE_AGENT_SEED}
+      - VALIDATOR_AGENT_ADDRESS=${VALIDATOR_AGENT_ADDRESS}
+      - CANISTER_IDS_PATH=/app/dfx-local/canister_ids.json
+      - IDENTITY_PEM_PATH=/app/identity.pem
+    ports:
+      - "8001:8001"
+    restart: ${AGENT_RESTART_POLICY:-unless-stopped}
+    volumes:
+      - ./.dfx/local/canister_ids.json:/app/dfx-local/canister_ids.json:ro
+      - ./identity.pem:/app/identity.pem:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
 
   action-agent:
-    build: .
-    container_name: aegis-action-agent
-    command: python agents/action_agent.py
-    restart: on-failure
-    network_mode: "host"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python /app/agents/action_agent.py
+    env_file:
+      - ../.env
+    environment:
+      - ACTION_AGENT_SEED=${ACTION_AGENT_SEED}
+      - CANISTER_IDS_PATH=/app/dfx-local/canister_ids.json
+      - IDENTITY_PEM_PATH=/app/identity.pem
+      - ICP_URL=${ICP_URL}
+    ports:
+      - "8004:8004"
+    depends_on:
+      - validator-agent
+      - oracle-agent
+    restart: ${AGENT_RESTART_POLICY:-unless-stopped}
     volumes:
-      - ../identity.pem:/app/identity.pem:ro
-      - ../.dfx/local:/app/dfx-local:ro
+      - ./.dfx/local/canister_ids.json:/app/dfx-local/canister_ids.json:ro
+      - ./identity.pem:/app/identity.pem:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"

@@ -1,16 +1,24 @@
 // ======================================================
-// AEGIS PROTOCOL - main.js 
+// AEGIS PROTOCOL - main.js (REVISED)
 // ======================================================
 
 import { Actor, HttpAgent } from "@dfinity/agent";
 import { AuthClient } from "@dfinity/auth-client";
 import { Principal } from "@dfinity/principal";
 
-import { idlFactory as did_sbt_ledger_idl, canisterId as did_sbt_ledger_id } from "dfx:canisters/did_sbt_ledger";
-import { idlFactory as event_dao_idl } from "dfx:canisters/event_dao";
-import { idlFactory as event_factory_idl, canisterId as event_factory_id } from "dfx:canisters/event_factory";
+// ===== PERUBAHAN DI SINI =====
+import { idlFactory as did_sbt_ledger_idl, canisterId as did_sbt_ledger_id } from "@declarations/did_sbt_ledger";
+import { idlFactory as event_dao_idl } from "@declarations/event_dao";
+import { idlFactory as event_factory_idl, canisterId as event_factory_id } from "@declarations/event_factory";
+// =============================
 
 const host = "http://127.0.0.1:4943";
+
+// URL untuk mengambil daftar bencana dari Oracle
+const ORACLE_API_URL = 'http://localhost:8001/disasters';
+
+// URL untuk mengirim permintaan pembuatan proposal ke Validator
+const VALIDATOR_API_URL = 'http://localhost:8002/create_proposal';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // === 1. MENDEFINISIKAN SEMUA ELEMEN UI ===

@@ -28,18 +28,20 @@ function createEnvVars() {
 
 // Konfigurasi Vite
 export default defineConfig({
-  // INI DARI SOLUSI SEBELUMNYA (JANGAN DIHAPUS)
+  // Bagian ini sudah benar untuk environment variables
   define: createEnvVars(),
 
-  // ===== TAMBAHKAN BLOK INI =====
+  // ===== BLOK YANG DIREVISI =====
   resolve: {
     alias: {
-      "dfx:canisters": path.resolve(__dirname, "..", ".dfx", "local", "canisters"),
+      // ".." berarti "naik satu level folder" (dari /frontend ke /)
+      // lalu masuk ke "src/declarations"
+      "@declarations": path.resolve(__dirname, "..", "src", "declarations"),
     },
   },
-  // ===============================
+  // ============================
 
-  // INI JUGA DARI SOLUSI SEBELUMNYA (JANGAN DIHAPUS)
+  // Konfigurasi proxy server Anda sudah benar
   server: {
     proxy: {
       "/api": {

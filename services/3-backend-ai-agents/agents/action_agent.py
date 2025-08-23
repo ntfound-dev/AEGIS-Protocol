@@ -1,63 +1,149 @@
-from uagents import Agent, Context, Model
-from uagents.setup import fund_agent_if_low
-from ic.agent import Agent as ICAgent
-from ic.client import Client
-from ic.identity import Identity
-from ic.candid import encode, decode
-import os; import json; import time
+import os
+import json
+import asyncio
+from typing import Any, Dict
+import aiofiles # type: ignore
 
-class ValidatedEvent(Model):
-    event_type: str; severity: str; details_json: str; confidence_score: float
+from uagents import Agent, Context, Model # type: ignore
+from uagents.setup import fund_agent_if_low # type: ignore
 
+# Pustaka untuk interaksi dengan Internet Computer
+from ic.agent import Agent as ICAgent # type: ignore
+from ic.client import Client # type: ignore
+from ic.identity import Identity # type: ignore
+from ic import candid # type: ignore
 
-ICP_URL = "http://localhost:4943"
-
+# --- KONFIGURASI ---
+ACTION_AGENT_SEED = os.getenv("ACTION_AGENT_SEED", "action_agent_secret_seed_phrase_placeholder")
+ICP_URL = os.getenv("ICP_URL", "http://127.0.0.1:4943")
 IDENTITY_PEM_PATH = "/app/identity.pem"
 CANISTER_IDS_PATH = "/app/dfx-local/canister_ids.json"
+EVENT_FACTORY_CANISTER_NAME = "event_factory"
 
-def get_canister_id(name: str) -> str:
-    timeout = 40
-    start_time = time.time()
-    while not os.path.exists(CANISTER_IDS_PATH):
-        if time.time() - start_time > timeout:
-            print(f"FATAL: Timed out waiting for {CANISTER_IDS_PATH}. Is volume mounted & dfx deploy run?"); return None
-        print(f"Waiting for canister ID file at: {CANISTER_IDS_PATH}...")
-        time.sleep(2)
-    with open(CANISTER_IDS_PATH, "r") as f: data = json.load(f)
-    canister_info = data.get(name)
-    if not canister_info or not canister_info.get("local"):
-        print(f"FATAL: Canister '{name}' not found in {CANISTER_IDS_PATH}"); return None
-    return canister_info.get("local")
+# --- MODEL DATA ---
+class ValidatedEvent(Model):
+    event_type: str
+    severity: str
+    details_json: str
+    confidence_score: float
 
+# --- INISIALISASI AGENT ---
 action_agent = Agent(
-    name="action_agent_bridge", port=8003, seed="action_agent_bridge_secret_seed_phrase_11223",
-    endpoint=["http://action-agent:8003/submit"],
+    name="action_agent_bridge",
+    port=8003,
+    seed=ACTION_AGENT_SEED,
+    endpoint=[f"http://action-agent:8003/submit"],
 )
-fund_agent_if_low(str(action_agent.wallet.address()))
 
-def call_icp_declare_event(event: ValidatedEvent):
-    event_factory_canister_id = get_canister_id("event_factory")
-    if not event_factory_canister_id: return None
+fund_agent_if_low(str(action_agent.wallet.address()))
+# REVISI: Mengembalikan ke ._logger untuk memperbaiki AttributeError
+action_agent._logger.info(f"Action Agent berjalan dengan alamat: {action_agent.address}")
+
+# REVISI: Menambahkan type hint untuk kejelasan
+ic_state: Dict[str, Any] = {"agent": None, "factory_canister_id": None, "is_ready": False}
+
+# --- FUNGSI INTERAKSI DENGAN BLOCKCHAIN (IC) ---
+
+async def initialize_ic_agent(ctx: Context):
+    """Fungsi startup untuk menginisialisasi koneksi ke IC."""
+    ctx.logger.info("Memulai inisialisasi koneksi ke Internet Computer...")
+
     try:
-        identity = Identity.from_pem(open(IDENTITY_PEM_PATH, "r").read())
-        client = Client(url=ICP_URL)
-        ic_agent = ICAgent(identity=identity, client=client)
-        arg = [{"event_type": event.event_type, "severity": event.severity, "details_json": event.details_json}]
-        print(f"Calling 'declare_event' on canister {event_factory_canister_id} at {ICP_URL}...")
-        response = ic_agent.update_raw(canister_id=event_factory_canister_id, method_name="declare_event", arg=encode(arg))
-        result = decode(response)
-        print(f"SUCCESS: Canister call successful. Result: {result}")
+        for _ in range(10):
+            if os.path.isfile(CANISTER_IDS_PATH):
+                break
+            ctx.logger.info(f"Menunggu file canister ID di: {CANISTER_IDS_PATH}...")
+            await asyncio.sleep(2)
+
+        if not os.path.isfile(CANISTER_IDS_PATH):
+            ctx.logger.critical(f"FATAL: File Canister ID tidak ditemukan: {CANISTER_IDS_PATH}")
+            return
+
+        async with aiofiles.open(CANISTER_IDS_PATH, "r") as f:
+            canister_ids_json = await f.read()
+        
+        canister_ids = json.loads(canister_ids_json)
+        canister_id = canister_ids.get(EVENT_FACTORY_CANISTER_NAME, {}).get("local")
+
+        if not canister_id:
+            ctx.logger.critical(f"FATAL: Canister '{EVENT_FACTORY_CANISTER_NAME}' tidak ditemukan di {CANISTER_IDS_PATH}")
+            return
+        ic_state["factory_canister_id"] = canister_id
+    except Exception as e:
+        ctx.logger.critical(f"FATAL: Gagal membaca file Canister ID. Error: {e}")
+        return
+
+    try:
+        if not os.path.isfile(IDENTITY_PEM_PATH):
+            ctx.logger.critical(f"FATAL: File identitas tidak ditemukan di {IDENTITY_PEM_PATH}.")
+            return
+            
+        async with aiofiles.open(IDENTITY_PEM_PATH, "rb") as f:
+            pem_content = await f.read()
+        
+        # REVISI: Menambahkan # type: ignore untuk mengatasi Pylance false positive
+        identity = Identity.from_pem(pem_content) # type: ignore
+    except Exception as e:
+        ctx.logger.critical(f"FATAL: Gagal membaca atau mem-parsing identity.pem. Error: {e}")
+        return
+
+    client = Client(url=ICP_URL)
+    ic_state["agent"] = ICAgent(identity=identity, client=client)
+    ic_state["is_ready"] = True
+    ctx.logger.info(f"SUKSES: Koneksi ke IC berhasil. Siap mengirim pesan ke canister '{ic_state['factory_canister_id']}'.")
+
+async def call_icp_declare_event(ctx: Context, event: ValidatedEvent):
+    """Memanggil fungsi 'declare_event' di canister IC."""
+    if not ic_state["is_ready"]:
+        ctx.logger.error("Koneksi ke IC belum siap. Panggilan ke canister dibatalkan.")
+        return None
+    
+    try:
+        ctx.logger.info(f"Mempersiapkan panggilan 'declare_event' ke canister {ic_state['factory_canister_id']}...")
+        
+        arg_payload = {
+            "event_type": event.event_type,
+            "severity": event.severity,
+            "details_json": event.details_json,
+        }
+        
+        encoded_arg = await asyncio.to_thread(candid.encode, [arg_payload])
+
+        response = await asyncio.to_thread(
+            ic_state["agent"].update_raw,
+            ic_state["factory_canister_id"],
+            "declare_event",
+            encoded_arg
+        )
+        
+        result = await asyncio.to_thread(candid.decode, response)
+        ctx.logger.info(f"SUKSES: Panggilan canister berhasil. Hasil: {result}")
         return result
     except Exception as e:
-        print(f"FATAL: Error calling ICP canister: {e}"); return None
+        ctx.logger.error(f"FATAL: Terjadi error saat memanggil canister: {e}", exc_info=True)
+        return None
 
-@action_agent.on_message(model=ValidatedEvent)
+# --- EVENT HANDLERS ---
+
+# Daftarkan handler startup — kompatibel jika framework menyimpan hooks sebagai callable atau list
+try:
+    if callable(getattr(action_agent, "_on_startup", None)):
+        action_agent._on_startup(initialize_ic_agent)  # type: ignore
+        action_agent._logger.info("initialize_ic_agent didaftarkan via callable _on_startup().")
+    else:
+        hooks = getattr(action_agent, "_on_startup", None)
+        if isinstance(hooks, list):
+            hooks.append(initialize_ic_agent)
+            action_agent._logger.info("initialize_ic_agent ditambahkan ke list _on_startup hooks.")
+        else:
+            action_agent._logger.warning("_on_startup tidak callable atau list; melewatkan pendaftaran otomatis.")
+except Exception as e:
+    action_agent._logger.error(f"Gagal mendaftar initialize_ic_agent: {e}", exc_info=True)
+
+@action_agent.on_message(model=ValidatedEvent) # type: ignore
 async def handle_validated_event(ctx: Context, sender: str, msg: ValidatedEvent):
-    ctx.logger.info(f"Received validated event from {sender.split('/')[-1]}.")
-    call_icp_declare_event(msg)
+    ctx.logger.info(f"Menerima event tervalidasi dari {sender}. Menjembatani ke IC...")
+    await call_icp_declare_event(ctx, msg)
 
 if __name__ == "__main__":
-    if not os.path.exists(IDENTITY_PEM_PATH):
-        print(f"FATAL: identity.pem not found. Check docker-compose.yml volumes.")
-    else:
-        action_agent.run()
+    action_agent.run()

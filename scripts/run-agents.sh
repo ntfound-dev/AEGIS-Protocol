@@ -1,35 +1,65 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Memastikan skrip berhenti jika ada error
+set -euo pipefail
 
-# scripts/run-agents.sh (Versi Anti-Gagal)
-# Skrip untuk membersihkan, membangun, dan menjalankan semua agen AI.
-# HARUS DIJALANKAN DARI ROOT FOLDER PROYEK.
+# --- PENGATURAN AWAL ---
+# Mendefinisikan path-path penting agar mudah dibaca
+ROOT="$(pwd)"
+SERVICE_DIR="services/3-backend-ai-agents"
+PERSISTENT_DIR="${SERVICE_DIR}/persistent"
+DFX_SRC="./.dfx/local/canister_ids.json" # <-- INI SUDAH BENAR, mencari canister_ids.json di lokasi yang tepat
+IDENTITY_SRC="./identity.pem"
 
-# Warna untuk output
-YELLOW='\033[1;33m'
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-NC='\033[0m'
+echo "==== Menjalankan Agents (Setup Jangka Panjang) ===="
+echo "Project root: ${ROOT}"
+echo
 
-echo -e "${YELLOW}--- AEGIS AI AGENT LAUNCH PROTOCOL ---${NC}"
+# --- LANGKAH 1: MEMBUAT FOLDER PENYIMPANAN ---
+# Docker butuh folder ini untuk menyimpan data agent agar tidak hilang saat container mati.
+mkdir -p "${PERSISTENT_DIR}"
+echo "- Memastikan folder ${PERSISTENT_DIR} ada."
 
-# Tentukan path ke file docker-compose.yml
-COMPOSE_FILE="./services/3-backend-ai-agents/docker-compose.yml"
-
-# --- LANGKAH 1: BERSIHKAN SEMUA CONTAINER LAMA ---
-echo ""
-echo -e "${YELLOW}Step 1: Cleaning up old containers (docker-compose down)...${NC}"
-# Perintah 'down' akan menghentikan dan menghapus container dari sesi sebelumnya.
-# Flag -v juga akan menghapus volume anonim.
-docker-compose -f "$COMPOSE_FILE" down -v
-
-if [ $? -ne 0 ]; then
-  echo -e "${RED}Warning: 'docker-compose down' failed. This might be okay if it's the first run.${NC}"
+# --- LANGKAH 2: MENYALIN KUNCI IDENTITAS ---
+# Memeriksa apakah identity.pem ada dan tidak kosong, lalu menyalinnya ke folder penyimpanan.
+if [ -f "${IDENTITY_SRC}" ] && [ -s "${IDENTITY_SRC}" ]; then
+  cp -f "${IDENTITY_SRC}" "${PERSISTENT_DIR}/identity.pem"
+  chmod 600 "${PERSISTENT_DIR}/identity.pem" || true # Mengatur izin file agar aman
+  echo "- Menyalin identity.pem -> ${PERSISTENT_DIR}/identity.pem (izin 600)"
+else
+  echo "ERROR: identity.pem tidak ditemukan atau kosong di ${IDENTITY_SRC}."
+  echo "Harap buat file identity.pem yang valid di root proyek sebelum melanjutkan."
+  exit 1
 fi
 
-# --- LANGKAH 2: BANGUN & JALANKAN CONTAINER BARU ---
-echo ""
-echo -e "${YELLOW}Step 2: Building and starting all AI agents (docker-compose up)...${NC}"
-docker-compose -f "$COMPOSE_FILE" up --build
+# --- LANGKAH 3: MENYALIN ID CANISTER ---
+# Memeriksa apakah canister_ids.json ada, lalu menyalinnya agar bisa dibaca oleh agent di dalam Docker.
+if [ -f "${DFX_SRC}" ] && [ -s "${DFX_SRC}" ]; then
+  mkdir -p "${PERSISTENT_DIR}/dfx-local"
+  cp -f "${DFX_SRC}" "${PERSISTENT_DIR}/dfx-local/canister_ids.json"
+  chmod 644 "${PERSISTENT_DIR}/dfx-local/canister_ids.json" || true
+  echo "- Menyalin canister_ids.json -> ${PERSISTENT_DIR}/dfx-local/canister_ids.json"
+else
+  # Memberi peringatan jika file tidak ada, tapi tidak menghentikan skrip.
+  echo "PERINGATAN: canister_ids.json tidak ditemukan di ${DFX_SRC}. Agent mungkin tidak bisa terhubung ke canister lokal."
+fi
 
-echo ""
-echo -e "${GREEN}✅ Launch sequence complete.${NC}"
+# --- LANGKAH 4: MERESTART CONTAINER DOCKER ---
+echo "- Menghentikan container lama jika ada (docker compose down)..."
+pushd "${SERVICE_DIR}" >/dev/null # Pindah sementara ke dalam folder service
+docker compose down               # Perintah ini menghentikan & menghapus container lama untuk memastikan restart bersih
+echo "- Membangun dan memulai container baru (docker compose up -d --build)..."
+docker compose up -d --build      # Menjalankan docker compose untuk membuat yang baru
+popd >/dev/null                   # Kembali ke folder awal
+
+# --- LANGKAH 5: MENUNGGU DAN MENAMPILKAN LOG ---
+echo "- Menunggu container stabil (sekitar 20 detik) ..."
+sleep 10
+docker compose -f ${SERVICE_DIR}/docker-compose.yml ps
+
+echo "- Menampilkan 150 baris log terakhir:"
+docker compose -f ${SERVICE_DIR}/docker-compose.yml logs --tail 150
+
+echo
+echo "Selesai. Untuk melihat log secara langsung, gunakan:"
+echo "  cd ${SERVICE_DIR}"
+echo "  docker compose logs -f"

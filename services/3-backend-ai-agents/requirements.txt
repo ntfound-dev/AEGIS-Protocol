@@ -1,4 +1,8 @@
 uagents
-requests
-ic-py
 python-dotenv
+httpx
+ic-py
+aiofiles
+openai
+uvicorn[standard]
+fastapi
