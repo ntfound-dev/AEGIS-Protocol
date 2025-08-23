@@ -1,0 +1,12 @@
+# Dfinity / dfx local state and caches
+.dfx/
+.mops/
+node_modules/
+*.log
+.DS_Store
+# Dfinity / dfx local state and caches
+.dfx/
+.mops/
+node_modules/
+*.log
+.DS_Store
