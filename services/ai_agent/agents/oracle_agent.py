@@ -7,14 +7,14 @@ import httpx
 from uagents import Agent, Context, Model # type: ignore
 from uagents.setup import fund_agent_if_low # type: ignore
 
-# --- KONFIGURASI ---
+# --- CONFIGURATION ---
 ORACLE_SEED = os.getenv("ORACLE_AGENT_SEED", "oracle_agent_secret_seed_phrase_placeholder")
 VALIDATOR_AGENT_ADDRESS = os.getenv("VALIDATOR_AGENT_ADDRESS")
 USGS_API_URL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson"
 BMKG_API_URL = "https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json"
 FETCH_INTERVAL_SECONDS = float(os.getenv("FETCH_INTERVAL_SECONDS", 300.0))
 
-# --- MODEL DATA ---
+# --- DATA MODEL ---
 class RawEarthquakeData(Model):
     source: str
     magnitude: float
@@ -23,7 +23,7 @@ class RawEarthquakeData(Model):
     lon: float
     timestamp: int
 
-# --- INISIALISASI AGENT ---
+# --- AGENT INITIALIZATION ---
 oracle_agent = Agent(
     name="oracle_agent_multi_source",
     port=8001,
@@ -31,12 +31,12 @@ oracle_agent = Agent(
     endpoint=["http://oracle-agent:8001/submit"],
 )
 fund_agent_if_low(str(oracle_agent.wallet.address()))
-# REVISI: Mengembalikan ke ._logger untuk memperbaiki AttributeError
-oracle_agent._logger.info(f"Oracle Agent berjalan dengan alamat: {oracle_agent.address}")
+# REVISION: Return to ._logger to fix AttributeError
+oracle_agent._logger.info(f"Oracle Agent running with address: {oracle_agent.address}")
 
-# --- FUNGSI PARSING DATA ---
+# --- DATA PARSING FUNCTIONS ---
 def _parse_usgs_data(feature: Dict[str, Any]) -> Optional[RawEarthquakeData]:
-    """Mem-parsing satu data gempa dari format USGS."""
+    """Parse one earthquake data from USGS format."""
     try:
         props: Dict[str, Any] = feature['properties']
         coords: List[float] = feature['geometry']['coordinates']
@@ -51,11 +51,11 @@ def _parse_usgs_data(feature: Dict[str, Any]) -> Optional[RawEarthquakeData]:
             timestamp=int(props['time'] // 1000)
         )
     except (KeyError, TypeError, IndexError) as e:
-        oracle_agent._logger.warning(f"Gagal mem-parsing item data USGS: {e}")
+        oracle_agent._logger.warning(f"Failed to parse USGS data item: {e}")
         return None
 
 def _parse_bmkg_data(gempa: Dict[str, Any]) -> Optional[RawEarthquakeData]:
-    """Mem-parsing data gempa dari format BMKG."""
+    """Parse earthquake data from BMKG format."""
     try:
         coords_str: str = gempa.get('Coordinates', '0,0')
         lat_str, lon_str = coords_str.split(',')
@@ -76,15 +76,15 @@ def _parse_bmkg_data(gempa: Dict[str, Any]) -> Optional[RawEarthquakeData]:
             timestamp=int(dt_object.timestamp())
         )
     except Exception as e:
-        oracle_agent._logger.warning(f"Gagal mem-parsing item data BMKG: {e}")
+        oracle_agent._logger.warning(f"Failed to parse BMKG data item: {e}")
         return None
 
-# --- FUNGSI PENGAMBILAN DATA ---
+# --- DATA FETCHING FUNCTIONS ---
 ParserFunc = Callable[[Dict[str, Any]], Optional[RawEarthquakeData]]
 
 async def _fetch_from_source(ctx: Context, client: httpx.AsyncClient, url: str, parser: ParserFunc, source_name: str) -> List[RawEarthquakeData]:
-    """Mengambil dan mem-parsing data dari satu sumber API."""
-    ctx.logger.info(f"Mengambil data dari API {source_name}...")
+    """Fetch and parse data from one API source."""
+    ctx.logger.info(f"Fetching data from {source_name} API...")
     try:
         response = await client.get(url, timeout=20.0)
         response.raise_for_status()
@@ -106,17 +106,17 @@ async def _fetch_from_source(ctx: Context, client: httpx.AsyncClient, url: str, 
         
         return all_parsed_data
     except Exception as e:
-        ctx.logger.error(f"Error saat memproses data dari {source_name}: {e}")
+        ctx.logger.error(f"Error while processing data from {source_name}: {e}")
         return []
 
 @oracle_agent.on_interval(period=FETCH_INTERVAL_SECONDS) # type: ignore
 async def fetch_and_send_data(ctx: Context):
-    """Fungsi periodik untuk mengambil data dari semua sumber dan mengirimkannya."""
+    """Periodic function to fetch data from all sources and send them."""
     if not VALIDATOR_AGENT_ADDRESS:
-        ctx.logger.warning("Alamat Validator Agent belum diatur. Melewatkan pengambilan data.")
+        ctx.logger.warning("Validator Agent address not set. Skipping data fetch.")
         return
 
-    ctx.logger.info("Interval Oracle terpicu. Mengambil data dari semua sumber...")
+    ctx.logger.info("Oracle interval triggered. Fetching data from all sources...")
     async with httpx.AsyncClient() as client:
         tasks = [
             _fetch_from_source(ctx, client, USGS_API_URL, _parse_usgs_data, "USGS"),
@@ -127,16 +127,16 @@ async def fetch_and_send_data(ctx: Context):
     all_earthquakes: List[RawEarthquakeData] = [item for sublist in results for item in sublist]
 
     if not all_earthquakes:
-        ctx.logger.info("Tidak ada data gempa baru yang valid ditemukan.")
+        ctx.logger.info("No new valid earthquake data found.")
         return
 
-    ctx.logger.info(f"Menemukan {len(all_earthquakes)} event baru. Mengirim ke validator...")
+    ctx.logger.info(f"Found {len(all_earthquakes)} new events. Sending to validator...")
     for eq_data in all_earthquakes:
         try:
             await ctx.send(VALIDATOR_AGENT_ADDRESS, eq_data)
-            ctx.logger.info(f"Data dari {eq_data.source} untuk '{eq_data.location}' berhasil dikirim.")
+            ctx.logger.info(f"Data from {eq_data.source} for '{eq_data.location}' successfully sent.")
         except Exception as e:
-            ctx.logger.error(f"Gagal mengirim data ke validator: {e}")
+            ctx.logger.error(f"Failed to send data to validator: {e}")
 
 if __name__ == "__main__":
     oracle_agent.run()

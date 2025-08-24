@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # scripts/deploy-blockchain.sh
-# Deploy canisters ICP di environment lokal (WSL/Ubuntu).
-# Jalankan dari root folder proyek.
+# Deploy ICP canisters in local environment (WSL/Ubuntu).
+# Run from project root folder.
 set -euo pipefail
 IFS=$'\n\t'
 
-# ---------- Konfigurasi warna & helper ----------
+# ---------- Color configuration & helpers ----------
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -21,7 +21,7 @@ if [ -f "$HOME/.local/share/dfx/env" ]; then
   source "$HOME/.local/share/dfx/env"
   log "Loaded dfx environment from $HOME/.local/share/dfx/env"
 else
-  warn "DFX environment not found at $HOME/.local/share/dfx/env. Pastikan dfx sudah terinstall."
+  warn "DFX environment not found at $HOME/.local/share/dfx/env. Make sure dfx is installed."
   exit 1
 fi
 
@@ -66,7 +66,7 @@ for i in {1..30}; do
   fi
   sleep 1
   if [ "$i" -eq 30 ]; then
-    warn "Replica tidak responsif setelah 30 detik. Cek 'dfx start' output."
+    warn "Replica not responsive after 30 seconds. Check 'dfx start' output."
     exit 1
   fi
 done
@@ -89,7 +89,7 @@ for ID in funder organizer community_a community_b; do
   if dfx identity new "$ID" --storage-mode=plaintext >/dev/null 2>&1; then
     log "Created identity '$ID' with --storage-mode=plaintext"
   else
-    log "Could not create '$ID' with --storage-mode=plaintext — falling back to interactive creation (isi passphrase jika diminta)"
+    log "Could not create '$ID' with --storage-mode=plaintext — falling back to interactive creation (enter passphrase if prompted)"
     # This may prompt for passphrase; allow it but don't fail script on user cancel
     dfx identity new "$ID" || true
   fi
@@ -131,7 +131,7 @@ if [ -n "${AUTO_INIT_PRINCIPAL:-}" ]; then
     exit 1
   fi
 else
-  log "Deploying all canisters (interactive). Jika muncul prompt untuk principal, masukkan principal yang diinginkan sekali saja."
+  log "Deploying all canisters (interactive). If prompted for principal, enter the desired principal once only."
   dfx deploy
 fi
 
@@ -140,7 +140,7 @@ dfx generate
 
 # ---------- Save principals to log ----------
 {
-  echo "--- SIMPAN PRINCIPALS ---"
+  echo "--- SAVE PRINCIPALS ---"
   echo "Admin/Default: $ADMIN_PRINCIPAL"
   echo "Funder:        ${FUNDER_PRINCIPAL:-<none>}"
   echo "Organizer:     ${ORGANIZER_PRINCIPAL:-<none>}"
@@ -150,6 +150,6 @@ dfx generate
 } | tee -a "${LOG_FILE}"
 
 ok "Canisters deployed successfully."
-log "Replica is running in the background. Gunakan 'dfx stop' untuk mematikannya."
+log "Replica is running in the background. Use 'dfx stop' to stop it."
 
 # End of script

@@ -1,65 +1,63 @@
 #!/usr/bin/env bash
-# Memastikan skrip berhenti jika ada error
+
 set -euo pipefail
 
-# --- PENGATURAN AWAL ---
-# Mendefinisikan path-path penting agar mudah dibaca
 ROOT="$(pwd)"
 SERVICE_DIR="services/ai_agent"
 PERSISTENT_DIR="${SERVICE_DIR}/persistent"
-DFX_SRC="./.dfx/local/canister_ids.json" # <-- INI SUDAH BENAR, mencari canister_ids.json di lokasi yang tepat
+DFX_SRC="./.dfx/local/canister_ids.json"
 IDENTITY_SRC="./identity.pem"
 
-echo "==== Menjalankan Agents (Setup Jangka Panjang) ===="
+echo "==== Running Agents (Long-term Setup) ===="
 echo "Project root: ${ROOT}"
 echo
 
-# --- LANGKAH 1: MEMBUAT FOLDER PENYIMPANAN ---
-# Docker butuh folder ini untuk menyimpan data agent agar tidak hilang saat container mati.
+# --- STEP 1: CREATE STORAGE FOLDER ---
+# Docker needs this folder to store agent data so it doesn't get lost when container stops.
 mkdir -p "${PERSISTENT_DIR}"
-echo "- Memastikan folder ${PERSISTENT_DIR} ada."
+echo "- Ensuring ${PERSISTENT_DIR} folder exists."
 
-# --- LANGKAH 2: MENYALIN KUNCI IDENTITAS ---
-# Memeriksa apakah identity.pem ada dan tidak kosong, lalu menyalinnya ke folder penyimpanan.
+# --- STEP 2: COPY IDENTITY KEY ---
+# Check if identity.pem exists and is not empty, then copy it to storage folder.
 if [ -f "${IDENTITY_SRC}" ] && [ -s "${IDENTITY_SRC}" ]; then
   cp -f "${IDENTITY_SRC}" "${PERSISTENT_DIR}/identity.pem"
-  chmod 600 "${PERSISTENT_DIR}/identity.pem" || true # Mengatur izin file agar aman
-  echo "- Menyalin identity.pem -> ${PERSISTENT_DIR}/identity.pem (izin 600)"
+  chmod 600 "${PERSISTENT_DIR}/identity.pem" || true # Set file permissions for security
+  echo "- Copying identity.pem -> ${PERSISTENT_DIR}/identity.pem (permissions 600)"
 else
-  echo "ERROR: identity.pem tidak ditemukan atau kosong di ${IDENTITY_SRC}."
-  echo "Harap buat file identity.pem yang valid di root proyek sebelum melanjutkan."
+  echo "ERROR: identity.pem not found or empty at ${IDENTITY_SRC}."
+  echo "Please create a valid identity.pem file in the project root before continuing."
   exit 1
 fi
 
-# --- LANGKAH 3: MENYALIN ID CANISTER ---
-# Memeriksa apakah canister_ids.json ada, lalu menyalinnya agar bisa dibaca oleh agent di dalam Docker.
+# --- STEP 3: COPY CANISTER IDs ---
+# Check if canister_ids.json exists, then copy it so agents inside Docker can read it.
 if [ -f "${DFX_SRC}" ] && [ -s "${DFX_SRC}" ]; then
   mkdir -p "${PERSISTENT_DIR}/dfx-local"
   cp -f "${DFX_SRC}" "${PERSISTENT_DIR}/dfx-local/canister_ids.json"
   chmod 644 "${PERSISTENT_DIR}/dfx-local/canister_ids.json" || true
-  echo "- Menyalin canister_ids.json -> ${PERSISTENT_DIR}/dfx-local/canister_ids.json"
+  echo "- Copying canister_ids.json -> ${PERSISTENT_DIR}/dfx-local/canister_ids.json"
 else
-  # Memberi peringatan jika file tidak ada, tapi tidak menghentikan skrip.
-  echo "PERINGATAN: canister_ids.json tidak ditemukan di ${DFX_SRC}. Agent mungkin tidak bisa terhubung ke canister lokal."
+  # Give warning if file doesn't exist, but don't stop the script.
+  echo "WARNING: canister_ids.json not found at ${DFX_SRC}. Agents might not be able to connect to local canisters."
 fi
 
-# --- LANGKAH 4: MERESTART CONTAINER DOCKER ---
-echo "- Menghentikan container lama jika ada (docker compose down)..."
-pushd "${SERVICE_DIR}" >/dev/null # Pindah sementara ke dalam folder service
-docker compose down               # Perintah ini menghentikan & menghapus container lama untuk memastikan restart bersih
-echo "- Membangun dan memulai container baru (docker compose up -d --build)..."
-docker compose up -d --build      # Menjalankan docker compose untuk membuat yang baru
-popd >/dev/null                   # Kembali ke folder awal
+# --- STEP 4: RESTART DOCKER CONTAINERS ---
+echo "- Stopping old containers if any (docker compose down)..."
+pushd "${SERVICE_DIR}" >/dev/null # Temporarily move into service folder
+docker compose down               # This command stops & removes old containers to ensure clean restart
+echo "- Building and starting new containers (docker compose up -d --build)..."
+docker compose up -d --build      # Run docker compose to create new ones
+popd >/dev/null                   # Return to original folder
 
-# --- LANGKAH 5: MENUNGGU DAN MENAMPILKAN LOG ---
-echo "- Menunggu container stabil (sekitar 20 detik) ..."
+# --- STEP 5: WAIT AND DISPLAY LOGS ---
+echo "- Waiting for containers to stabilize (about 20 seconds) ..."
 sleep 10
 docker compose -f ${SERVICE_DIR}/docker-compose.yml ps
 
-echo "- Menampilkan 150 baris log terakhir:"
+echo "- Displaying last 150 log lines:"
 docker compose -f ${SERVICE_DIR}/docker-compose.yml logs --tail 150
 
 echo
-echo "Selesai. Untuk melihat log secara langsung, gunakan:"
+echo "Done. To view logs in real-time, use:"
 echo "  cd ${SERVICE_DIR}"
 echo "  docker compose logs -f"

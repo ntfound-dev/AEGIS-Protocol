@@ -1,77 +1,77 @@
 #!/usr/bin/env bash
 # run-frontend.sh
 # Versi: 1.0
-# Tujuan: men-setup dan menjalankan frontend (vite + paket @dfinity/*)
+# Purpose: setup and run frontend (vite + @dfinity/* packages)
 set -euo pipefail
 
-# Konfigurasi singkat
+# Brief configuration
 FRONTEND_DIR="frontend"
 DFINITY_PKGS=( "@dfinity/agent" "@dfinity/auth-client" "@dfinity/candid" "@dfinity/principal" )
 VITE_PACKAGE="vite"
 
-# Jika ingin hanya melakukan instalasi tanpa menjalankan dev server:
+# If you want to only install without running dev server:
 # SKIP_START=1 ./run-frontend.sh
 SKIP_START="${SKIP_START:-0}"
 
-# Cek npm & node
+# Check npm & node
 if ! command -v npm >/dev/null 2>&1; then
-  echo "Error: npm tidak ditemukan. Install node/npm dulu." >&2
+  echo "Error: npm not found. Install node/npm first." >&2
   exit 2
 fi
 if ! command -v node >/dev/null 2>&1; then
-  echo "Error: node tidak ditemukan. Install node/npm dulu." >&2
+  echo "Error: node not found. Install node/npm first." >&2
   exit 2
 fi
 
-# Masuk ke direktori frontend
+# Enter frontend directory
 if [ ! -d "$FRONTEND_DIR" ]; then
-  echo "Direktori '$FRONTEND_DIR' tidak ditemukan. Buat dulu atau jalankan dari lokasi yang benar." >&2
+  echo "Directory '$FRONTEND_DIR' not found. Create it first or run from the correct location." >&2
   exit 3
 fi
 cd "$FRONTEND_DIR"
 
 echo "Working dir: $(pwd)"
 
-# npm init jika package.json belum ada
+# npm init if package.json doesn't exist yet
 if [ ! -f package.json ]; then
-  echo "package.json tidak ditemukan — menjalankan: npm init -y"
+  echo "package.json not found — running: npm init -y"
   npm init -y
 else
-  echo "package.json sudah ada — lewati npm init"
+  echo "package.json already exists — skip npm init"
 fi
 
-# Install vite sebagai dev dependency (cek dulu apakah sudah terpasang)
+# Install vite as dev dependency (check first if already installed)
 if npm list --depth=0 2>/dev/null | grep -q " ${VITE_PACKAGE}@"; then
-  echo "vite sudah terpasang (devDependency) — lewati"
+  echo "vite already installed (devDependency) — skip"
 else
-  echo "Menginstall vite sebagai devDependency..."
+  echo "Installing vite as devDependency..."
   npm install --save-dev "$VITE_PACKAGE"
 fi
 
-# Install paket-paket @dfinity jika belum ada
+# Install @dfinity packages if not yet available
 for pkg in "${DFINITY_PKGS[@]}"; do
   if npm list --depth=0 2>/dev/null | grep -q " ${pkg}@"; then
-    echo "$pkg sudah terpasang — lewati"
+    echo "$pkg already installed — skip"
   else
-    echo "Menginstall $pkg ..."
+    echo "Installing $pkg ..."
     npm install "$pkg"
   fi
 done
 
-# Tambahkan skrip "dev": "vite" ke package.json jika belum ada
+# Add "dev": "vite" script to package.json if not yet available
 has_dev_script=$(node -e "let p=require('./package.json'); console.log(p.scripts && p.scripts.dev ? '1' : '0');")
 if [ "$has_dev_script" = "1" ]; then
-  echo "Script 'dev' sudah ada di package.json — lewati penambahan"
+  echo "'dev' script already exists in package.json — skip addition"
 else
-  echo "Menambahkan script 'dev' ke package.json..."
+  echo "Adding 'dev' script to package.json..."
   node -e "let p=require('./package.json'); p.scripts=p.scripts||{}; p.scripts.dev='vite'; require('fs').writeFileSync('package.json', JSON.stringify(p,null,2)); console.log('added dev script to package.json');"
 fi
 
-# Jalankan dev server kecuali diminta untuk skip
+# Run dev server unless asked to skip
 if [ "$SKIP_START" != "1" ]; then
-  echo "Menjalankan: npm run dev"
-  # Jalankan npm run dev (tidak dijalankan di background — ini akan menahan terminal)
+  echo "Running: npm run dev"
+  # Run npm run dev (not run in background — this will hold the terminal)
   npm run dev
 else
-  echo "SKIP_START=1 terdeteksi — setup selesai, tidak menjalankan 'npm run dev'."
+  echo "SKIP_START=1 detected — setup complete, not running 'npm run dev'."
 fi
