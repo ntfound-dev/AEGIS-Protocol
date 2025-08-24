@@ -1,14 +1,9 @@
-# Dfinity / dfx local state and caches
+declarations/
 .dfx/
 .mops/
 node_modules/
 *.log
 .DS_Store
-# Dfinity / dfx local state and caches
-.dfx/
-.mops/
-node_modules/
-*.log
-.DS_Store
-#fetch.ai
 .env
+identity.pem
+persistent/

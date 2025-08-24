@@ -10,18 +10,18 @@ import { Principal } from "@dfinity/principal";
 import { idlFactory as did_sbt_ledger_idl, canisterId as did_sbt_ledger_id } from "@declarations/did_sbt_ledger";
 import { idlFactory as event_dao_idl } from "@declarations/event_dao";
 import { idlFactory as event_factory_idl, canisterId as event_factory_id } from "@declarations/event_factory";
-// =============================
+
 
 const host = "http://127.0.0.1:4943";
 
-// URL untuk mengambil daftar bencana dari Oracle
+//  mengambil daftar bencana dari Oracle
 const ORACLE_API_URL = 'http://localhost:8001/disasters';
 
-// URL untuk mengirim permintaan pembuatan proposal ke Validator
+//  mengirim permintaan pembuatan proposal ke Validator
 const VALIDATOR_API_URL = 'http://localhost:8002/create_proposal';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // === 1. MENDEFINISIKAN SEMUA ELEMEN UI ===
+    // 1. MENDEFINISIKAN SEMUA ELEMEN UI
     const loginBtn = document.getElementById('loginBtn');
     const loginStatusEl = document.getElementById('loginStatus');
     const getProposalsBtn = document.getElementById('getProposalsBtn');
@@ -33,33 +33,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const registerDidBtn = document.getElementById('registerDidBtn');
     const getSbtsBtn = document.getElementById('getSbtsBtn');
 
-    // === 2. STATE APLIKASI ===
+    //  STATE APLIKASI 
     let authClient;
     let agent;
     let didLedgerActor;
-    let activeDaoPrincipal = null; // Akan diisi dengan Principal ID dari DAO yang aktif
-    let activeDaoActor = null;     // Aktor untuk DAO yang aktif, dibuat secara dinamis
+    let activeDaoPrincipal = null; 
+    let activeDaoActor = null;     
 
     const agentChatUrl = 'http://localhost:8002/chat';
     const agentSignalUrl = 'http://localhost:8002/verify_disaster';
 
     // === 3. FUNGSI HELPER TAMPILAN ===
-    
-    // SECURITY: Input sanitization function to prevent XSS
-    function sanitizeInput(input) {
-        const div = document.createElement('div');
-        div.textContent = input;
-        return div.innerHTML;
-    }
-    
-    // SECURITY: Validate message input
-    function validateMessage(message) {
-        if (!message || typeof message !== 'string') return false;
-        if (message.length > 1000) return false; // Prevent very long messages
-        if (message.trim().length === 0) return false;
-        return true;
-    }
-    
     function displayMessage(content, sender, isJson = false) {
         const messageContainer = document.createElement('div');
         messageContainer.classList.add('message', sender === 'user' ? 'user-message' : 'agent-message');
@@ -70,25 +54,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 typeof value === 'bigint' ? value.toString() : value, 2);
         } else {
             element = document.createElement('p');
-            // SECURITY: Sanitize content before displaying
-            element.textContent = typeof content === 'string' ? sanitizeInput(content) : content;
+            element.textContent = content;
         }
         messageContainer.appendChild(element);
         chatWindow.appendChild(messageContainer);
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    // === 4. LOGIKA UTAMA INTERAKSI ===
+    //  LOGIKA UTAMA INTERAKSI 
 
-    // -- Logika Chat (Otak dari Interaksi) --
+    //  Logika Chat 
     async function handleChatMessage() {
         const messageText = chatInput.value.trim();
-        
-        // SECURITY: Validate input before processing
-        if (!validateMessage(messageText)) {
-            displayMessage('Pesan tidak valid. Pastikan pesan tidak kosong dan kurang dari 1000 karakter.', 'agent');
-            return;
-        }
+        if (!messageText) return;
 
         displayMessage(messageText, 'user');
         chatInput.value = '';
@@ -166,7 +144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // -- Logika Otentikasi & Update UI State --
+    //  Logika Otentikasi & Update UI State 
     authClient = await AuthClient.create();
     updateUIState();
 
@@ -210,7 +188,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     
-    // -- Logika Profil DID & SBT --
+    //  Logika Profil DID & SBT 
     async function handleRegisterDid() {
         const name = profileNameInput.value.trim();
         if (!name) { alert("Nama profil tidak boleh kosong."); return; }
@@ -240,7 +218,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // -- Logika Interaksi DAO Dinamis --
+    //  Logika Interaksi DAO Dinamis 
     function getActiveEventDaoActor() {
         if (!activeDaoPrincipal) {
             displayMessage("Tidak ada DAO yang aktif. Buat event baru melalui chat terlebih dahulu.", "agent");
@@ -269,22 +247,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function handleDonateAndVote() {
-        if (!authClient.isAuthenticated()) { alert("Anda harus login!"); return; }
-        const daoActor = getActiveEventDaoActor();
-        if (!daoActor) return;
-        displayMessage(`Mengirim donasi ke DAO ${activeDaoPrincipal.toText().substring(0,13)}...`, "agent");
-        try {
-            const amount = 100_000_000n; // 1 ICP in e8s (8 desimal)
-            const proposalId = 0n;
-            const inFavor = true;
-            const response = await daoActor.donateAndVote(amount, proposalId, inFavor);
-            displayMessage(`Sukses: ${response}`, "agent");
-        } catch (error) {
-            displayMessage(`Error saat donasi/vote: ${error.message}`, "agent");
-        }
+    if (!authClient.isAuthenticated()) { 
+        alert("Anda harus login!"); 
+        return; 
     }
+    const daoActor = getActiveEventDaoActor();
+    if (!daoActor) return;
+    
+    displayMessage(`Mengirim donasi ke DAO ${activeDaoPrincipal.toText().substring(0,13)}...`, "agent");
+    
+    try {
+        
+        const amount = 100_000_000n; 
+        const proposalId = 0n;
+        const inFavor = true;
+        const response = await daoActor.donateAndVote(amount, proposalId, inFavor);
+        displayMessage(`Sukses: ${response}`, "agent");
+    } catch (error) {
+        displayMessage(`Error saat donasi/vote: ${error.message}`, "agent");
+    }
+}
 
-    // === 5. MENGHUBUNGKAN SEMUA FUNGSI KE TOMBOL ===
+    //  MENGHUBUNGKAN SEMUA FUNGSI KE TOMBOL 
     loginBtn.addEventListener("click", handleLogin);
     chatSendBtn.addEventListener("click", handleChatMessage);
     chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleChatMessage(); });
