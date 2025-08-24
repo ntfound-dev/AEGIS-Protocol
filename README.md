@@ -57,13 +57,13 @@ This project uses **Docker Compose** to simplify the setup and execution process
 
 ---
 
-### 1. Prasyarat
+### 1. Prerequisites
 
-Pastikan perangkat Anda sudah terinstal:
+Make sure your device has the following installed:
 
 * Docker & Docker Compose
 * Git
-* (Opsional, jika menggunakan WSL) instal `dos2unix` untuk menghindari masalah line ending (CRLF) pada file `.sh`:
+* (Optional, if using WSL) install `dos2unix` to avoid line ending issues (CRLF) on `.sh` files:
 
 ```bash
 sudo apt update && sudo apt install dos2unix -y
@@ -71,7 +71,7 @@ sudo apt update && sudo apt install dos2unix -y
 
 ---
 
-### 2. Clone Repositori
+### 2. Clone Repository
 
 ```bash
 git clone https://github.com/ntfound-dev/AEGIS-Protocol.git
@@ -80,9 +80,9 @@ cd AEGIS-Protocol
 
 ---
 
-### 3. Konversi Line Ending (Khusus Pengguna WSL/Windows)
+### 3. Line Ending Conversion (WSL/Windows Users Only)
 
-Jika Anda meng-clone repo ini di Windows lalu menjalankannya di WSL, beberapa file `.sh` mungkin tidak bisa dijalankan karena format line ending. Jalankan:
+If you cloned this repo on Windows and then run it on WSL, some `.sh` files might not be executable due to line ending format. Run:
 
 ```bash
 dos2unix scripts/*.sh
@@ -90,35 +90,35 @@ dos2unix scripts/*.sh
 
 ---
 
-### 4. Buat File Environment
+### 4. Create Environment File
 
-Sebelum menjalankan service, buat file `.env` dari contoh yang sudah ada:
+Before running services, create a `.env` file from the existing example:
 
 ```bash
 cp env.example .env
 ```
 
-File `.env` ini harus berada di **root project**.
+The `.env` file must be located in the **root project**.
 
 ---
 
-### 5. Identitas & Principal (**Jalankan terlebih dahulu**)
+### 5. Identity & Principal (**Run this first**)
 
-Untuk mendapatkan **principal identitas**, jalankan:
+To get the **principal identity**, run:
 
 ```bash
 dfx identity get-principal
 ```
 
-Saat diminta password, gunakan default: `Mei2000`.
+When prompted for password, use default: `Mei2000`.
 
-> ⚠️ **Catatan**: Langkah ini dilakukan dulu sebelum menjalankan service lainnya.
+> ⚠️ **Note**: This step must be done first before running other services.
 
 ---
 
-### 6. Buat Kunci Identitas Action Agent
+### 6. Create Action Agent Identity Keys
 
-Buka **terminal WSL baru**, lalu jalankan:
+Open a **new WSL terminal**, then run:
 
 ```bash
 bash scripts/generate-keys.sh
@@ -126,11 +126,11 @@ bash scripts/generate-keys.sh
 
 ---
 
-### 7. Jalankan Seluruh Skrip Manual (Wajib, Terminal Terpisah)
+### 7. Run All Manual Scripts (Required, Separate Terminals)
 
-Setiap komponen dalam proyek ini saling bergantung dan harus dijalankan secara paralel. Oleh karena itu, **seluruh skrip berikut wajib dijalankan satu per satu pada terminal WSL yang berbeda (terpisah)**.
+Every component in this project is interdependent and must be run in parallel. Therefore, **all the following scripts must be run one by one in different WSL terminals (separate)**.
 
-Buka tiga terminal WSL terpisah, lalu jalankan perintah berikut secara berurutan (masing-masing pada terminalnya sendiri):
+Open three separate WSL terminals, then run the following commands in sequence (each in its own terminal):
 
 * **Terminal 1:**
 
@@ -150,21 +150,21 @@ bash ./scripts/run-agents.sh
 bash ./scripts/run-frontend.sh
 ```
 
-> ⚠️ Catatan: Jangan menjalankan skrip-skrip ini dalam satu terminal yang sama, karena seluruh proses tersebut merupakan bagian dari satu proyek kesatuan yang harus berjalan secara bersamaan.
+> ⚠️ Note: Do not run these scripts in the same terminal, as all these processes are part of one unified project that must run simultaneously.
 
 
 ---
 
-### 8. Jalankan Layanan Backend (Docker) – *Opsional / Terakhir*
+### 8. Run Backend Services (Docker) – *Optional / Last*
 
-Karena saat ini Docker masih ada sedikit error, langkah ini dipindahkan ke akhir.
-Jika ingin mencoba, jalankan di **terminal WSL baru**:
+Since Docker currently has some minor errors, this step is moved to the end.
+If you want to try, run in a **new WSL terminal**:
 
 ```bash
-# Build service utama
+# Build main service
 docker-compose build dfx-replica
 
-# Jalankan semua layanan
+# Run all services
 docker-compose up --build
 ```
 
@@ -172,96 +172,96 @@ docker-compose up --build
 
 
 
-## 📂 Struktur Proyek
+## 📂 Project Structure
 ```
 aegis-protocol/
-├── .gitignore                    # Mengabaikan file yang tidak perlu (build artifacts, .env, .pem, dll.)
-├── README.md                     # Dokumentasi utama: cara instalasi, setup, dan menjalankan setiap layanan.
-├── Dockerfile                    # Docker configuration untuk root project
-├── dfx.json                      # File konfigurasi utama untuk DFINITY SDK (dfx)
+├── .gitignore                    # Ignore unnecessary files (build artifacts, .env, .pem, etc.)
+├── README.md                     # Main documentation: installation, setup, and running each service
+├── Dockerfile                    # Docker configuration for root project
+├── dfx.json                      # Main configuration file for DFINITY SDK (dfx)
 ├── mops.toml                     # Motoko package manager configuration
-├── .env                          # Environment variables (generated dari env.example)
-├── env.example                   # Template file environment
-├── identity.pem                  # Kunci identitas utama (diabaikan oleh gitignore)
-├── install-mops.sh               # Script untuk menginstall Motoko package manager
+├── .env                          # Environment variables (generated from env.example)
+├── env.example                   # Environment file template
+├── identity.pem                  # Main identity key (ignored by gitignore)
+├── install-mops.sh               # Script to install Motoko package manager
 ├── .ic-assets.json5              # Internet Computer assets configuration
 │
-├── docs/                         # Dokumentasi lengkap proyek
-│   ├── architecture.md           # Penjelasan teknis arsitektur secara mendalam
-│   ├── concepts.md               # Penjelasan visi dan konsep inti dari Aegis Protocol
-│   ├── diagram.md                # Dokumentasi diagram
-│   ├── diagram.mermaid           # File diagram Mermaid
-│   └── problem_and_solution_technical.md  # Analisis teknis masalah dan solusi
+├── docs/                         # Complete project documentation
+│   ├── architecture.md           # In-depth technical architecture explanation
+│   ├── concepts.md               # Vision and core concepts explanation of Aegis Protocol
+│   ├── diagram.md                # Diagram documentation
+│   ├── diagram.mermaid           # Mermaid diagram file
+│   └── problem_and_solution_technical.md  # Technical problem and solution analysis
 │
-├── frontend/                     # <------------ [ UNTUK TIM FRONTEND ]
-│   ├── index.html                # Halaman utama untuk Dashboard Demo
-│   ├── main.js                   # Logika utama frontend (menggantikan script.js)
-│   ├── style.css                 # Styling halaman
-│   ├── package.json              # Node.js dependencies untuk frontend
-│   ├── package-lock.json         # Lock file untuk dependencies
-│   ├── vite.config.js            # Vite configuration untuk development server
+├── frontend/                     # <------------ [ FOR FRONTEND TEAM ]
+│   ├── index.html                # Main page for Dashboard Demo
+│   ├── main.js                   # Main frontend logic (replaces script.js)
+│   ├── style.css                 # Page styling
+│   ├── package.json              # Node.js dependencies for frontend
+│   ├── package-lock.json         # Dependencies lock file
+│   ├── vite.config.js            # Vite configuration for development server
 │   └── node_modules/             # Node.js modules (auto-generated)
 │
-├── src/                          # <------------ [ UNTUK TIM BLOCKCHAIN ]
+├── src/                          # <------------ [ FOR BLOCKCHAIN TEAM ]
 │   ├── declarations/             # Auto-generated TypeScript/JavaScript bindings
-│   │   ├── did_sbt_ledger/       # TypeScript declarations untuk DID SBT Ledger
-│   │   ├── event_dao/            # TypeScript declarations untuk Event DAO
-│   │   ├── event_factory/        # TypeScript declarations untuk Event Factory
-│   │   ├── frontend/             # TypeScript declarations untuk Frontend canister
-│   │   └── insurance_vault/      # TypeScript declarations untuk Insurance Vault
+│   │   ├── did_sbt_ledger/       # TypeScript declarations for DID SBT Ledger
+│   │   ├── event_dao/            # TypeScript declarations for Event DAO
+│   │   ├── event_factory/        # TypeScript declarations for Event Factory
+│   │   ├── frontend/             # TypeScript declarations for Frontend canister
+│   │   └── insurance_vault/      # TypeScript declarations for Insurance Vault
 │   ├── did_sbt_ledger/
-│   │   └── main.mo               # Canister untuk identitas dan reputasi (DID & SBT)
+│   │   └── main.mo               # Canister for identity and reputation (DID & SBT)
 │   ├── event_dao/
-│   │   ├── main.mo               # Template canister untuk setiap bencana
-│   │   ├── event_defs.mo         # Definisi event dan struktur data
-│   │   └── types.mo              # Type definitions untuk Event DAO
+│   │   ├── main.mo               # Template canister for each disaster
+│   │   ├── event_defs.mo         # Event definitions and data structures
+│   │   └── types.mo              # Type definitions for Event DAO
 │   ├── event_factory/
-│   │   ├── main.mo               # Canister (pabrik) untuk membuat EventDAO
-│   │   └── types.mo              # Type definitions untuk Event Factory
+│   │   ├── main.mo               # Canister (factory) for creating EventDAO
+│   │   └── types.mo              # Type definitions for Event Factory
 │   ├── insurance_vault/
-│   │   └── main.mo               # Canister brankas asuransi parametrik
+│   │   └── main.mo               # Parametric insurance vault canister
 │   └── types/                    # Shared type definitions
 │
-├── services/                     # Layanan backend dan deployment
-│   ├── backend/                  # <------------ [UNTUK TIM AI]
-│   │   ├── requirements.txt      # Dependensi Python (uagents, requests, ic-py)
-│   │   ├── Dockerfile            # Resep untuk membuat container Docker untuk agen
-│   │   ├── docker-compose.yml    # Docker Compose configuration untuk backend services
-│   │   ├── .env.example          # Template environment untuk backend
-│   │   ├── persistent/           # Data persisten untuk development
+├── services/                     # Backend services and deployment
+│   ├── backend/                  # <------------ [FOR AI TEAM]
+│   │   ├── requirements.txt      # Python dependencies (uagents, requests, ic-py)
+│   │   ├── Dockerfile            # Recipe for creating Docker container for agents
+│   │   ├── docker-compose.yml    # Docker Compose configuration for backend services
+│   │   ├── .env.example          # Backend environment template
+│   │   ├── persistent/           # Persistent data for development
 │   │   │   ├── dfx-local/        # Local dfx data
-│   │   │   └── identity.pem      # Identity key untuk backend agents
-│   │   └── agents/               # Folder semua AI agents
-│   │       ├── oracle_agent.py   # Agen yang memantau data dunia nyata
-│   │       ├── validator_agent.py # Agen yang memvalidasi data bencana
-│   │       ├── action_agent.py   # Agen yang menjembatani ke ICP
+│   │   │   └── identity.pem      # Identity key for backend agents
+│   │   └── agents/               # All AI agents folder
+│   │       ├── oracle_agent.py   # Agent that monitors real-world data
+│   │       ├── validator_agent.py # Agent that validates disaster data
+│   │       ├── action_agent.py   # Agent that bridges to ICP
 │   │       └── chatbotrepair/    # Chatbot repair agents
 │   │           ├── asi_one.py    # ASI.One integration agent
-│   │           └── functions.py  # Utility functions untuk chatbot
+│   │           └── functions.py  # Utility functions for chatbot
 │   └── dfx/
-│       └── Dockerfile            # Docker configuration untuk DFX service
+│       └── Dockerfile            # Docker configuration for DFX service
 │
-├── .dfx/                         # Folder yang dibuat otomatis oleh dfx (build artifacts)
+├── .dfx/                         # Folder automatically created by dfx (build artifacts)
 │   ├── local/                    # Local deployment artifacts
 │   └── network/                  # Network deployment artifacts
 │
 └── scripts/                      # Automation scripts
-    ├── deploy-blockchain.sh      # Skrip untuk deploy semua canister
-    ├── run-agents.sh             # Skrip untuk menjalankan semua agen Python
-    ├── run-frontend.sh           # Skrip untuk menjalankan frontend development server
-    └── generate-keys.sh          # Skrip untuk membuat identity.pem baru
+    ├── deploy-blockchain.sh      # Script to deploy all canisters
+    ├── run-agents.sh             # Script to run all Python agents
+    ├── run-frontend.sh           # Script to run frontend development server
+    └── generate-keys.sh          # Script to create new identity.pem
 ```
 
 
-## 🎯 Rencana Masa Depan (Pasca-Hackathon)
+## 🎯 Future Plans (Post-Hackathon)
 
-* *Q4 2025:* Peluncuran Testnet, mengundang 5 NGO mitra pertama untuk uji coba.
-* *Q1 2026:* Audit Keamanan & Peluncuran Mainnet Beta dengan frontend Flutter.
-* *Q2 2026:* Pengembangan Tokenomics $AEGIS untuk tata kelola dan staking.
-* *Q3 2026:* Ekspansi Global melalui kemitraan dengan badan kemanusiaan internasional.
+* *Q4 2025:* Testnet Launch, inviting the first 5 NGO partners for trials.
+* *Q1 2026:* Security Audit & Mainnet Beta Launch with Flutter frontend.
+* *Q2 2026:* $AEGIS Tokenomics Development for governance and staking.
+* *Q3 2026:* Global Expansion through partnerships with international humanitarian agencies.
 
-## 🧗 Tantangan Selama Hackathon
+## 🧗 Challenges During Hackathon
 
-1.  *Interoperabilitas Ekosistem:* Merancang protokol komunikasi yang andal antara agen Python di Fetch.ai dengan canister Motoko di ICP.
-2.  *Simulasi Real-time:* Mengintegrasikan sumber data untuk simulasi deteksi bencana oleh Oracle Agent.
-3.  *Alur Kerja Tim:* Mengkoordinasikan tim dengan keahlian berbeda (Blockchain, AI, Frontend) dalam waktu singkat.
+1.  *Ecosystem Interoperability:* Designing reliable communication protocols between Python agents on Fetch.ai with Motoko canisters on ICP.
+2.  *Real-time Simulation:* Integrating data sources for disaster detection simulation by Oracle Agent.
+3.  *Team Workflow:* Coordinating teams with different expertise (Blockchain, AI, Frontend) in a short time.
