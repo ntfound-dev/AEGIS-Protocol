@@ -7,3 +7,4 @@ node_modules/
 .env
 identity.pem
 persistent/
+aegis_test_run.log
