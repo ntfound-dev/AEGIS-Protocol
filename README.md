@@ -51,20 +51,29 @@ Berikut adalah detail dari agen-agen yang berjalan di Fetch.ai, sesuai dengan pe
 ---
 
 
-# 🚀 Cara Menjalankan Proyek (Pengembangan Lokal)
+Siap 👍, saya update lagi dokumennya sesuai permintaan:
 
-Proyek ini menggunakan **Docker Compose** untuk mempermudah proses setup dan eksekusi.
+* Tambahkan **note membuat `.env` dari `env.example`** di root.
+* Langkah **Jalankan Layanan Backend (docker-compose)** dipindahkan ke paling akhir (karena masih ada error).
+
+Berikut hasil revisi:
 
 ---
 
-## 1. Prasyarat
+# 🚀 Cara Menjalankan Proyek (Pengembangan Lokal) – *WSL Version*
+
+Proyek ini menggunakan **Docker Compose** untuk mempermudah proses setup dan eksekusi.
+**⚠️ Semua perintah `bash` dijalankan di terminal berbeda (tab/instance WSL berbeda).**
+
+---
+
+### 1. Prasyarat
 
 Pastikan perangkat Anda sudah terinstal:
 
-* [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/)
+* Docker & Docker Compose
 * Git
-* **(Opsional, jika menggunakan WSL)**
-  Instal `dos2unix` untuk menghindari masalah line ending (CRLF) pada file `.sh`.
+* (Opsional, jika menggunakan WSL) instal `dos2unix` untuk menghindari masalah line ending (CRLF) pada file `.sh`:
 
 ```bash
 sudo apt update && sudo apt install dos2unix -y
@@ -72,7 +81,7 @@ sudo apt update && sudo apt install dos2unix -y
 
 ---
 
-## 2. Clone Repositori
+### 2. Clone Repositori
 
 ```bash
 git clone https://github.com/ntfound-dev/AEGIS-Protocol.git
@@ -81,9 +90,9 @@ cd AEGIS-Protocol
 
 ---
 
-## 3. Konversi Line Ending (Khusus Pengguna WSL/Windows)
+### 3. Konversi Line Ending (Khusus Pengguna WSL/Windows)
 
-Jika Anda meng-clone repo ini di Windows lalu menjalankannya di WSL, beberapa file `.sh` mungkin tidak bisa dijalankan karena format line ending. Jalankan perintah berikut:
+Jika Anda meng-clone repo ini di Windows lalu menjalankannya di WSL, beberapa file `.sh` mungkin tidak bisa dijalankan karena format line ending. Jalankan:
 
 ```bash
 dos2unix scripts/*.sh
@@ -91,7 +100,35 @@ dos2unix scripts/*.sh
 
 ---
 
-## 4. Buat Kunci Identitas Action Agent
+### 4. Buat File Environment
+
+Sebelum menjalankan service, buat file `.env` dari contoh yang sudah ada:
+
+```bash
+cp env.example .env
+```
+
+File `.env` ini harus berada di **root project**.
+
+---
+
+### 5. Identitas & Principal (**Jalankan terlebih dahulu**)
+
+Untuk mendapatkan **principal identitas**, jalankan:
+
+```bash
+dfx identity get-principal
+```
+
+Saat diminta password, gunakan default: `Mei2000`.
+
+> ⚠️ **Catatan**: Langkah ini dilakukan dulu sebelum menjalankan service lainnya.
+
+---
+
+### 6. Buat Kunci Identitas Action Agent
+
+Buka **terminal WSL baru**, lalu jalankan:
 
 ```bash
 bash scripts/generate-keys.sh
@@ -99,7 +136,22 @@ bash scripts/generate-keys.sh
 
 ---
 
-## 5. Jalankan Layanan Backend
+### 7. Jalankan Skrip Manual (Opsional)
+
+Jika diperlukan, di **terminal WSL baru**, jalankan salah satu dari:
+
+```bash
+bash ./scripts/deploy-blockchain.sh
+bash ./scripts/run-agents.sh
+bash ./scripts/run-frontend.sh
+```
+
+---
+
+### 8. Jalankan Layanan Backend (Docker) – *Opsional / Terakhir*
+
+Karena saat ini Docker masih ada sedikit error, langkah ini dipindahkan ke akhir.
+Jika ingin mencoba, jalankan di **terminal WSL baru**:
 
 ```bash
 # Build service utama
@@ -111,30 +163,6 @@ docker-compose up --build
 
 ---
 
-## 6. Jalankan Skrip Manual (Jika Diperlukan)
-
-Selain Docker, ada beberapa skrip yang bisa dijalankan langsung:
-
-```bash
-bash ./scripts/deploy-blockchain.sh
-bash ./scripts/run-agents.sh
-bash ./scripts/run-frontend.sh
-```
-
----
-
-## 7. Identitas & Principal
-
-Untuk mendapatkan *principal* identitas, jalankan:
-
-```bash
-dfx identity get-principal
-```
-
-> Saat diminta password, gunakan default:
-> **Mei2000**
-
----
 
 
 ## 📂 Struktur Proyek
