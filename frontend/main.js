@@ -44,6 +44,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     const agentSignalUrl = 'http://localhost:8002/verify_disaster';
 
     // === 3. FUNGSI HELPER TAMPILAN ===
+    
+    // SECURITY: Input sanitization function to prevent XSS
+    function sanitizeInput(input) {
+        const div = document.createElement('div');
+        div.textContent = input;
+        return div.innerHTML;
+    }
+    
+    // SECURITY: Validate message input
+    function validateMessage(message) {
+        if (!message || typeof message !== 'string') return false;
+        if (message.length > 1000) return false; // Prevent very long messages
+        if (message.trim().length === 0) return false;
+        return true;
+    }
+    
     function displayMessage(content, sender, isJson = false) {
         const messageContainer = document.createElement('div');
         messageContainer.classList.add('message', sender === 'user' ? 'user-message' : 'agent-message');
@@ -54,7 +70,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 typeof value === 'bigint' ? value.toString() : value, 2);
         } else {
             element = document.createElement('p');
-            element.textContent = content;
+            // SECURITY: Sanitize content before displaying
+            element.textContent = typeof content === 'string' ? sanitizeInput(content) : content;
         }
         messageContainer.appendChild(element);
         chatWindow.appendChild(messageContainer);
@@ -66,7 +83,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // -- Logika Chat (Otak dari Interaksi) --
     async function handleChatMessage() {
         const messageText = chatInput.value.trim();
-        if (!messageText) return;
+        
+        // SECURITY: Validate input before processing
+        if (!validateMessage(messageText)) {
+            displayMessage('Pesan tidak valid. Pastikan pesan tidak kosong dan kurang dari 1000 karakter.', 'agent');
+            return;
+        }
 
         displayMessage(messageText, 'user');
         chatInput.value = '';
