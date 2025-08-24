@@ -151,7 +151,53 @@ bash scripts/generate-keys.sh
 
 ---
 
-### 7. Run All Manual Scripts (Required, Separate Terminals)
+### 7. Install DFX (DFINITY Canister SDK)
+
+Before deploying the blockchain, you need to install DFX (DFINITY Canister SDK):
+
+```bash
+DFX_VERSION=0.28.0 sh -ci "$(curl -sSL https://internetcomputer.org/install.sh)"
+```
+
+After installation, reload your shell or run:
+```bash
+source ~/.local/share/dfx/env
+```
+
+---
+
+### 8. Install MOPS (Motoko Package Manager)
+
+The project uses MOPS for Motoko dependency management. Install it using one of these methods:
+
+**Method 1 (Recommended): Using npm**
+```bash
+# Install Node.js and npm if not already installed
+sudo apt update
+sudo apt install nodejs npm -y
+
+# Install MOPS globally
+npm install -g ic-mops
+```
+
+**Method 2: Direct installation**
+```bash
+sh -ci "$(curl -fsSL https://j4mwm-bqaaa-aaaam-qajbq-cai.ic0.app/install.sh)"
+```
+
+Verify the installation:
+```bash
+mops --version
+```
+
+Install project dependencies:
+```bash
+mops install
+```
+
+---
+
+### 9. Run All Manual Scripts (Required, Separate Terminals)
 
 Every component in this project is interdependent and must be run in parallel. Therefore, **all the following scripts must be run one by one in different WSL terminals (separate)**.
 
@@ -176,7 +222,7 @@ bash ./scripts/run-frontend.sh
 
 ---
 
-### 8. Run Backend Services (Docker) – Optional / Last
+### 10. Run Backend Services (Docker) – Optional / Last
 
 Since Docker currently has some minor errors, this step is moved to the end.
 If you want to try, run in a **new WSL terminal**:
