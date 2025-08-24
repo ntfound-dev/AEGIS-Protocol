@@ -140,7 +140,7 @@ dfx generate
 
 # ---------- Save principals to log ----------
 {
-  echo "--- SIMPAN SIMPA PRINCIPALS ---"
+  echo "--- SIMPAN PRINCIPALS ---"
   echo "Admin/Default: $ADMIN_PRINCIPAL"
   echo "Funder:        ${FUNDER_PRINCIPAL:-<none>}"
   echo "Organizer:     ${ORGANIZER_PRINCIPAL:-<none>}"

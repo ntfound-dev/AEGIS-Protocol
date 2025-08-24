@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     command: python /app/agents/validator_agent.py
     env_file:
-      - ../.env
+      - ../../.env
     environment:
       - VALIDATOR_AGENT_SEED=${VALIDATOR_AGENT_SEED}
       - ACTION_AGENT_ADDRESS=${ACTION_AGENT_ADDRESS}
@@ -29,8 +29,8 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=100m
     volumes:
-      - ./.dfx/local/canister_ids.json:/app/dfx-local/canister_ids.json:ro
-      - ./identity.pem:/app/identity.pem:ro
+      - ./persistent/dfx-local/canister_ids.json:/app/dfx-local/canister_ids.json:ro
+      - ./persistent/identity.pem:/app/identity.pem:ro
     logging:
       driver: "json-file"
       options:
@@ -43,7 +43,7 @@ services:
       dockerfile: Dockerfile
     command: python /app/agents/oracle_agent.py
     env_file:
-      - ../.env
+      - ../../.env
     environment:
       - ORACLE_AGENT_SEED=${ORACLE_AGENT_SEED}
       - VALIDATOR_AGENT_ADDRESS=${VALIDATOR_AGENT_ADDRESS}
@@ -53,8 +53,8 @@ services:
       - "8001:8001"
     restart: ${AGENT_RESTART_POLICY:-unless-stopped}
     volumes:
-      - ./.dfx/local/canister_ids.json:/app/dfx-local/canister_ids.json:ro
-      - ./identity.pem:/app/identity.pem:ro
+      - ./persistent/dfx-local/canister_ids.json:/app/dfx-local/canister_ids.json:ro
+      - ./persistent/identity.pem:/app/identity.pem:ro
     logging:
       driver: "json-file"
       options:
@@ -67,7 +67,7 @@ services:
       dockerfile: Dockerfile
     command: python /app/agents/action_agent.py
     env_file:
-      - ../.env
+      - ../../.env
     environment:
       - ACTION_AGENT_SEED=${ACTION_AGENT_SEED}
       - CANISTER_IDS_PATH=/app/dfx-local/canister_ids.json
@@ -80,8 +80,8 @@ services:
       - oracle-agent
     restart: ${AGENT_RESTART_POLICY:-unless-stopped}
     volumes:
-      - ./.dfx/local/canister_ids.json:/app/dfx-local/canister_ids.json:ro
-      - ./identity.pem:/app/identity.pem:ro
+      - ./persistent/dfx-local/canister_ids.json:/app/dfx-local/canister_ids.json:ro
+      - ./persistent/identity.pem:/app/identity.pem:ro
     logging:
       driver: "json-file"
       options:

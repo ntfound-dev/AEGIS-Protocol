@@ -2,7 +2,7 @@
 import Principal "mo:base/Principal";
 import Result "mo:base/Result";
 import Error "mo:base/Error";
-import Debug "mo:base/Debug";
+
 import EventDAO "canister:event_dao";
 import InsuranceVault "canister:insurance_vault"; // import statis, lebih aman
 import Types "types";
@@ -27,7 +27,7 @@ persistent actor class EventFactory() = this { // hapus vault_id constructor kar
       let eventdao_principal : Principal = Principal.fromActor(EventDAO);
 
       // PANGGIL insurance_vault secara langsung via import statis
-      let vault_res = await InsuranceVault.release_initial_funding(eventdao_principal, eventData);
+      let _vault_res = await InsuranceVault.release_initial_funding(eventdao_principal, eventData);
 
       return #ok(eventdao_principal);
     } catch (e) {
