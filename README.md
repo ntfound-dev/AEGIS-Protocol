@@ -2,58 +2,58 @@
 
 [![tag:innovationlab](https://img.shields.io/badge/innovationlab-3D88D3)](https://dorahacks.io/buidl/13593)
 
-Aegis Protocol adalah institusi digital otonom yang berfungsi sebagai jaring pengaman global untuk kemanusiaan. Proyek ini menggabungkan AI terdesentralisasi dengan teknologi blockchain untuk respons bencana yang cepat, transparan, dan terdesentralisasi.
+Aegis Protocol is an autonomous digital institution that serves as a global safety net for humanity. This project combines decentralized AI with blockchain technology for fast, transparent, and decentralized disaster response.
 
 ---
 
-## 🏛 Arsitektur
+## 🏛 Architecture
 
-Arsitektur Aegis Protocol terdiri dari dua lapisan utama yang saling berkomunikasi:
+The Aegis Protocol architecture consists of two main layers that communicate with each other:
 
-1.  *Intelligence Layer (Fetch.ai):* Berfungsi sebagai "sistem saraf" protokol. Jaringan agen AI otonom yang terdesentralisasi ini secara proaktif memantau data global untuk mendeteksi dan memvalidasi bencana.
-2.  *Execution Layer (Internet Computer):* Berfungsi sebagai "tulang punggung" eksekusi dan kepercayaan. Berjalan di atas Internet Computer, lapisan ini mengelola pembuatan DAO, perbendaharaan dana, voting, dan sistem reputasi on-chain.
+1.  *Intelligence Layer (Fetch.ai):* Functions as the "nervous system" of the protocol. This decentralized network of autonomous AI agents proactively monitors global data to detect and validate disasters.
+2.  *Execution Layer (Internet Computer):* Functions as the "backbone" of execution and trust. Running on Internet Computer, this layer manages DAO creation, fund treasury, voting, and on-chain reputation systems.
 
-* *Diagram Arsitektur Detail:* [Lihat di sini](./docs/diagrams/endgame_architecture.mermaid)
-
----
-
-## ✨ Fitur Utama & Inovasi
-
-### Fitur ICP yang Digunakan
-- *Canister Smart Contracts:* Seluruh logika backend, termasuk DAO dan brankas asuransi, di-deploy sebagai canister yang berjalan sepenuhnya on-chain.
-- *Model "Reverse Gas":* Pengguna (donatur, NGO) dapat berinteraksi dengan aplikasi tanpa perlu membayar biaya gas, menghilangkan hambatan adopsi.
-- *Web Serving On-Chain:* Kemampuan untuk menghosting antarmuka frontend langsung dari canister, menciptakan aplikasi yang sepenuhnya terdesentralisasi.
-- *Identitas & Aset On-Chain:* Mengelola identitas (DID) dan aset reputasi (SBTs) secara permanen di blockchain.
-
-### Fitur Fetch.ai yang Digunakan
-- *uAgents (Micro-agents):* Membangun agen-agen AI otonom (oracle, validator, action) yang dapat berkomunikasi dan bertindak secara mandiri.
-- *Agentverse / ASI:One:* Menyediakan platform untuk komunikasi dan interaksi antar agen, termasuk implementasi *Protokol Obrolan* yang dibutuhkan untuk demo.
-- *Decentralized AI Network:* Memanfaatkan jaringan Fetch.ai sebagai fondasi untuk orakel terdesentralisasi yang cerdas dan tahan sensor.
+* *Detailed Architecture Diagram:* [View here](./docs/diagrams/endgame_architecture.mermaid)
 
 ---
 
-## 🤖 Detail Agen Fetch.ai (Untuk Juri)
+## ✨ Main Features & Innovation
 
-Berikut adalah detail dari agen-agen yang berjalan di Fetch.ai, sesuai dengan persyaratan hackathon.
+### ICP Features Used
+- *Canister Smart Contracts:* All backend logic, including DAO and insurance vaults, deployed as canisters running entirely on-chain.
+- *"Reverse Gas" Model:* Users (donors, NGOs) can interact with the application without paying gas fees, removing adoption barriers.
+- *On-Chain Web Serving:* Capability to host frontend interfaces directly from canisters, creating fully decentralized applications.
+- *On-Chain Identity & Assets:* Managing identity (DID) and reputation assets (SBTs) permanently on the blockchain.
+
+### Fetch.ai Features Used
+- *uAgents (Micro-agents):* Building autonomous AI agents (oracle, validator, action) that can communicate and act independently.
+- *Agentverse / ASI:One:* Providing a platform for communication and interaction between agents, including implementation of *Chat Protocol* needed for demo.
+- *Decentralized AI Network:* Leveraging the Fetch.ai network as a foundation for intelligent and censorship-resistant decentralized oracles.
+
+---
+
+## 🤖 Fetch.ai Agent Details (For Judges)
+
+Here are the details of the agents running on Fetch.ai, according to hackathon requirements.
 
 * **Oracle Agent (oracle_agent_usgs)**
-    * *Alamat:* Alamat akan dihasilkan saat agen dijalankan.
-    * *Tugas:* Memantau sumber data eksternal (USGS) untuk mendeteksi anomali bencana.
+    * *Address:* Address will be generated when the agent is run.
+    * *Task:* Monitor external data sources (USGS) to detect disaster anomalies.
 
 * **Validator Agent (validator_agent_alpha)**
-    * *Alamat:* agent1q2gwxq52k8wecuvj3sksv9sszefaqpmq42u0mf6z0q5z4e0a9z0wz9z0q
-    * *Tugas:* Menerima data mentah, melakukan validasi, dan mencapai konsensus. Agen ini menerapkan *Protokol Obrolan Fetch.ai* dan dapat berinteraksi melalui Agentverse/ASI:One.
+    * *Address:* agent1q2gwxq52k8wecuvj3sksv9sszefaqpmq42u0mf6z0q5z4e0a9z0wz9z0q
+    * *Task:* Receive raw data, perform validation, and reach consensus. This agent implements *Fetch.ai Chat Protocol* and can interact through Agentverse/ASI:One.
 
 * **Action Agent (action_agent_bridge)**
-    * *Alamat:* Alamat akan dihasilkan saat agen dijalankan.
-    * *Tugas:* Menerima hasil konsensus dan memanggil smart contract di Internet Computer.
+    * *Address:* Address will be generated when the agent is run.
+    * *Task:* Receive consensus results and call smart contracts on Internet Computer.
 
 ---
 
-# 🚀 Cara Menjalankan Proyek (Pengembangan Lokal) – *WSL Version*
+# 🚀 How to Run the Project (Local Development) – *WSL Version*
 
-Proyek ini menggunakan **Docker Compose** untuk mempermudah proses setup dan eksekusi.
-**⚠️ Semua perintah `bash` dijalankan di terminal berbeda (tab/instance WSL berbeda).**
+This project uses **Docker Compose** to simplify the setup and execution process.
+**⚠️ All `bash` commands are run in different terminals (different WSL tabs/instances).**
 
 ---
 
