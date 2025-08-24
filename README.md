@@ -10,25 +10,25 @@ Aegis Protocol is an autonomous digital institution that serves as a global safe
 
 The Aegis Protocol architecture consists of two main layers that communicate with each other:
 
-1.  *Intelligence Layer (Fetch.ai):* Functions as the "nervous system" of the protocol. This decentralized network of autonomous AI agents proactively monitors global data to detect and validate disasters.
-2.  *Execution Layer (Internet Computer):* Functions as the "backbone" of execution and trust. Running on Internet Computer, this layer manages DAO creation, fund treasury, voting, and on-chain reputation systems.
+1. **Intelligence Layer (Fetch.ai):** Functions as the "nervous system" of the protocol. This decentralized network of autonomous AI agents proactively monitors global data to detect and validate disasters.
+2. **Execution Layer (Internet Computer):** Functions as the "backbone" of execution and trust. Running on Internet Computer, this layer manages DAO creation, fund treasury, voting, and on-chain reputation systems.
 
-* *Detailed Architecture Diagram:* [View here](./docs/diagrams/endgame_architecture.mermaid)
+- **Detailed Architecture Diagram:** [View here](./docs/diagrams/endgame_architecture.mermaid)
 
 ---
 
 ## ✨ Main Features & Innovation
 
 ### ICP Features Used
-- *Canister Smart Contracts:* All backend logic, including DAO and insurance vaults, deployed as canisters running entirely on-chain.
-- *"Reverse Gas" Model:* Users (donors, NGOs) can interact with the application without paying gas fees, removing adoption barriers.
-- *On-Chain Web Serving:* Capability to host frontend interfaces directly from canisters, creating fully decentralized applications.
-- *On-Chain Identity & Assets:* Managing identity (DID) and reputation assets (SBTs) permanently on the blockchain.
+- **Canister Smart Contracts:** All backend logic, including DAO and insurance vaults, deployed as canisters running entirely on-chain.
+- **"Reverse Gas" Model:** Users (donors, NGOs) can interact with the application without paying gas fees, removing adoption barriers.
+- **On-Chain Web Serving:** Capability to host frontend interfaces directly from canisters, creating fully decentralized applications.
+- **On-Chain Identity & Assets:** Managing identity (DID) and reputation assets (SBTs) permanently on the blockchain.
 
 ### Fetch.ai Features Used
-- *uAgents (Micro-agents):* Building autonomous AI agents (oracle, validator, action) that can communicate and act independently.
-- *Agentverse / ASI:One:* Providing a platform for communication and interaction between agents, including implementation of *Chat Protocol* needed for demo.
-- *Decentralized AI Network:* Leveraging the Fetch.ai network as a foundation for intelligent and censorship-resistant decentralized oracles.
+- **uAgents (Micro-agents):** Building autonomous AI agents (oracle, validator, action) that can communicate and act independently.
+- **Agentverse / ASI:One:** Providing a platform for communication and interaction between agents, including implementation of **Chat Protocol** needed for demo.
+- **Decentralized AI Network:** Leveraging the Fetch.ai network as a foundation for intelligent and censorship-resistant decentralized oracles.
 
 ---
 
@@ -36,21 +36,21 @@ The Aegis Protocol architecture consists of two main layers that communicate wit
 
 Here are the details of the agents running on Fetch.ai, according to hackathon requirements.
 
-* **Oracle Agent (oracle_agent_usgs)**
-    * *Address:* Address will be generated when the agent is run.
-    * *Task:* Monitor external data sources (USGS) to detect disaster anomalies.
+- **Oracle Agent (oracle_agent_usgs)**
+  - **Address:** Address will be generated when the agent is run.
+  - **Task:** Monitor external data sources (USGS) to detect disaster anomalies.
 
-* **Validator Agent (validator_agent_alpha)**
-    * *Address:* agent1q2gwxq52k8wecuvj3sksv9sszefaqpmq42u0mf6z0q5z4e0a9z0wz9z0q
-    * *Task:* Receive raw data, perform validation, and reach consensus. This agent implements *Fetch.ai Chat Protocol* and can interact through Agentverse/ASI:One.
+- **Validator Agent (validator_agent_alpha)**
+  - **Address:** `agent1q2gwxq52k8wecuvj3sksv9sszefaqpmq42u0mf6z0q5z4e0a9z0wz9z0q`
+  - **Task:** Receive raw data, perform validation, and reach consensus. This agent implements **Fetch.ai Chat Protocol** and can interact through Agentverse/ASI:One.
 
-* **Action Agent (action_agent_bridge)**
-    * *Address:* Address will be generated when the agent is run.
-    * *Task:* Receive consensus results and call smart contracts on Internet Computer.
+- **Action Agent (action_agent_bridge)**
+  - **Address:** Address will be generated when the agent is run.
+  - **Task:** Receive consensus results and call smart contracts on Internet Computer.
 
 ---
 
-# 🚀 How to Run the Project (Local Development) – *WSL Version*
+## 🚀 How to Run the Project (Local Development) – WSL Version
 
 This project uses **Docker Compose** to simplify the setup and execution process.
 **⚠️ All `bash` commands are run in different terminals (different WSL tabs/instances).**
@@ -61,9 +61,9 @@ This project uses **Docker Compose** to simplify the setup and execution process
 
 Make sure your device has the following installed:
 
-* Docker & Docker Compose
-* Git
-* (Optional, if using WSL) install `dos2unix` to avoid line ending issues (CRLF) on `.sh` files:
+- Docker & Docker Compose
+- Git
+- (Optional, if using WSL) install `dos2unix` to avoid line ending issues (CRLF) on `.sh` files:
 
 ```bash
 sudo apt update && sudo apt install dos2unix -y
@@ -92,10 +92,35 @@ dos2unix scripts/*.sh
 
 ### 4. Create Environment File
 
-Before running services, create a `.env` file from the existing example:
+Create a `.env` file in the root directory with the following content:
 
 ```bash
-cp env.example .env
+# API keys for external services (e.g., OpenAI, etc.)
+# Get your own API keys and insert them here. NEVER share your .env file.
+ASI_ONE_API_KEY=
+
+# Canister name on Internet Computer
+CANISTER_NAME=event_factory
+
+# Seed phrases for generating agent private keys.
+# Generate new seed phrases for each deployment. DO NOT use these examples.
+# You can use online mnemonic generators or dedicated libraries for this.
+VALIDATOR_AGENT_SEED=""
+ACTION_AGENT_SEED=""
+ORACLE_AGENT_SEED=""
+
+# Agent addresses will be generated automatically when agents first run.
+# After running docker compose up, copy agent addresses from logs and paste here for subsequent runs.
+VALIDATOR_AGENT_ADDRESS=
+ACTION_AGENT_ADDRESS=
+ORACLE_AGENT_ADDRESS=
+
+# Chain / Internet Computer configuration
+# These defaults are usually suitable for local development.
+CHAIN_ID="dorado-1"
+ICP_URL="http://host.docker.internal:4943"
+CANISTER_IDS_PATH="/app/dfx-local/canister_ids.json"
+IDENTITY_PEM_PATH="/app/identity.pem"
 ```
 
 The `.env` file must be located in the **root project**.
@@ -132,30 +157,26 @@ Every component in this project is interdependent and must be run in parallel. T
 
 Open three separate WSL terminals, then run the following commands in sequence (each in its own terminal):
 
-* **Terminal 1:**
-
+**Terminal 1:**
 ```bash
 bash ./scripts/deploy-blockchain.sh
 ```
 
-* **Terminal 2:**
-
+**Terminal 2:**
 ```bash
 bash ./scripts/run-agents.sh
 ```
 
-* **Terminal 3:**
-
+**Terminal 3:**
 ```bash
 bash ./scripts/run-frontend.sh
 ```
 
-> ⚠️ Note: Do not run these scripts in the same terminal, as all these processes are part of one unified project that must run simultaneously.
-
+> ⚠️ **Note:** Do not run these scripts in the same terminal, as all these processes are part of one unified project that must run simultaneously.
 
 ---
 
-### 8. Run Backend Services (Docker) – *Optional / Last*
+### 8. Run Backend Services (Docker) – Optional / Last
 
 Since Docker currently has some minor errors, this step is moved to the end.
 If you want to try, run in a **new WSL terminal**:
@@ -169,8 +190,6 @@ docker-compose up --build
 ```
 
 ---
-
-
 
 ## 📂 Project Structure
 ```
@@ -252,16 +271,17 @@ aegis-protocol/
     └── generate-keys.sh          # Script to create new identity.pem
 ```
 
+---
 
 ## 🎯 Future Plans (Post-Hackathon)
 
-* *Q4 2025:* Testnet Launch, inviting the first 5 NGO partners for trials.
-* *Q1 2026:* Security Audit & Mainnet Beta Launch with Flutter frontend.
-* *Q2 2026:* $AEGIS Tokenomics Development for governance and staking.
-* *Q3 2026:* Global Expansion through partnerships with international humanitarian agencies.
+- **Q4 2025:** Testnet Launch, inviting the first 5 NGO partners for trials.
+- **Q1 2026:** Security Audit & Mainnet Beta Launch with Flutter frontend.
+- **Q2 2026:** $AEGIS Tokenomics Development for governance and staking.
+- **Q3 2026:** Global Expansion through partnerships with international humanitarian agencies.
 
 ## 🧗 Challenges During Hackathon
 
-1.  *Ecosystem Interoperability:* Designing reliable communication protocols between Python agents on Fetch.ai with Motoko canisters on ICP.
-2.  *Real-time Simulation:* Integrating data sources for disaster detection simulation by Oracle Agent.
-3.  *Team Workflow:* Coordinating teams with different expertise (Blockchain, AI, Frontend) in a short time.
+1. **Ecosystem Interoperability:** Designing reliable communication protocols between Python agents on Fetch.ai with Motoko canisters on ICP.
+2. **Real-time Simulation:** Integrating data sources for disaster detection simulation by Oracle Agent.
+3. **Team Workflow:** Coordinating teams with different expertise (Blockchain, AI, Frontend) in a short time.

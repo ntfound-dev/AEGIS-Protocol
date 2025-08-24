@@ -5,7 +5,7 @@ set -euo pipefail
 # --- PENGATURAN AWAL ---
 # Mendefinisikan path-path penting agar mudah dibaca
 ROOT="$(pwd)"
-SERVICE_DIR="services/backend"
+SERVICE_DIR="services/ai_agent"
 PERSISTENT_DIR="${SERVICE_DIR}/persistent"
 DFX_SRC="./.dfx/local/canister_ids.json" # <-- INI SUDAH BENAR, mencari canister_ids.json di lokasi yang tepat
 IDENTITY_SRC="./identity.pem"
