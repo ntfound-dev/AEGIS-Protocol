@@ -1,11 +1,9 @@
 [
   {
-    // Security policy for all assets - follows IC best practices
     "match": "**/*",
     "security_policy": "standard"
   },
   {
-    // Enhanced security for JavaScript files
     "match": "*.js",
     "security_policy": "standard",
     "headers": {
@@ -13,7 +11,6 @@
     }
   },
   {
-    // Security for HTML files
     "match": "*.html",
     "security_policy": "standard",
     "headers": {
@@ -23,14 +20,12 @@
     }
   },
   {
-    // Cache control for assets
     "match": "*.{css,js,png,jpg,jpeg,gif,svg,ico,woff,woff2}",
     "headers": {
       "Cache-Control": "public, max-age=31536000, immutable"
     }
   },
   {
-    // No caching for HTML files to ensure updates
     "match": "*.html",
     "headers": {
       "Cache-Control": "no-cache, no-store, must-revalidate"

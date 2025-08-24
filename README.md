@@ -202,28 +202,90 @@ mops install
 
 ---
 
-### 9. Run All Manual Scripts (Required, Separate Terminals)
+### 9. Run All Manual Scripts (Required, Sequential Setup)
 
-Every component in this project is interdependent and must be run in parallel. Therefore, **all the following scripts must be run one by one in different WSL terminals (separate)**.
+Every component in this project is interdependent and must be run in parallel. **Follow these steps in order, using separate WSL terminals for each script**.
 
-Open three separate WSL terminals, then run the following commands in sequence (each in its own terminal):
+#### Step 9.1: Deploy Blockchain Layer (Terminal 1)
 
-**Terminal 1:**
+Open your **first WSL terminal** and navigate to the project directory:
+
 ```bash
+cd AEGIS-Protocol
 bash ./scripts/deploy-blockchain.sh
 ```
 
-**Terminal 2:**
+**What this does:**
+- Starts local DFX replica (Internet Computer blockchain)
+- Compiles and deploys all Motoko canisters (event_factory, event_dao, insurance_vault, did_sbt_ledger)
+- Creates canister IDs and generates frontend bindings
+
+**Wait for completion indicators:**
+- You should see messages like "Canister installed successfully"
+- All canisters should show "deployed" status
+- DFX replica should be running and ready to accept calls
+
+**⚠️ Important:** Keep this terminal running! Do NOT close it. The blockchain layer must stay active.
+
+---
+
+#### Step 9.2: Start AI Agents (Terminal 2)
+
+Open a **second WSL terminal** and navigate to the project directory:
+
 ```bash
+cd AEGIS-Protocol
 bash ./scripts/run-agents.sh
 ```
 
-**Terminal 3:**
+**What this does:**
+- Starts the Oracle Agent (monitors USGS data for disasters)
+- Starts the Validator Agent (validates and reaches consensus)
+- Starts the Action Agent (bridges consensus to ICP canisters)
+- Establishes communication between agents
+
+**Wait for completion indicators:**
+- You should see agent addresses being generated
+- Messages like "Agent started successfully"
+- Agents should begin their monitoring and communication cycles
+
+**⚠️ Important:** Keep this terminal running! The AI agents must stay active to detect and respond to events.
+
+---
+
+#### Step 9.3: Launch Frontend Server (Terminal 3)
+
+Open a **third WSL terminal** and navigate to the project directory:
+
 ```bash
+cd AEGIS-Protocol
 bash ./scripts/run-frontend.sh
 ```
 
-> ⚠️ **Note:** Do not run these scripts in the same terminal, as all these processes are part of one unified project that must run simultaneously.
+**What this does:**
+- Installs frontend dependencies (if needed)
+- Starts Vite development server
+- Serves the dashboard interface on localhost
+
+**Wait for completion indicators:**
+- Vite dev server should start successfully
+- You should see a local URL (typically `http://localhost:5173`)
+- The frontend should be accessible in your browser
+
+**⚠️ Important:** Keep this terminal running! The frontend provides the user interface for interacting with the system.
+
+---
+
+#### Step 9.4: Verify All Systems Running
+
+After all three terminals are running, verify the system status:
+
+1. **Terminal 1** should show DFX replica logs
+2. **Terminal 2** should show agent activity and communication
+3. **Terminal 3** should show Vite dev server ready
+4. **Browser** should display the dashboard at `http://localhost:5173`
+
+> ⚠️ **Critical:** All three terminals must remain open and running simultaneously. Each represents a different layer of the system that works together.
 
 ---
 
