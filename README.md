@@ -50,47 +50,92 @@ Berikut adalah detail dari agen-agen yang berjalan di Fetch.ai, sesuai dengan pe
 
 ---
 
-Oke, ini versi README kamu yang sudah aku perbarui, termasuk langkah penggunaan `dos2unix` untuk WSL dan penyesuaian path terbaru pada `generate-keys.sh`:
+
+# 🚀 Cara Menjalankan Proyek (Pengembangan Lokal)
+
+Proyek ini menggunakan **Docker Compose** untuk mempermudah proses setup dan eksekusi.
 
 ---
 
-## 🚀 Cara Menjalankan Proyek (Pengembangan Lokal)
+## 1. Prasyarat
 
-Proyek ini menggunakan *Docker Compose* untuk menyederhanakan proses setup.
-
-### 1. Prasyarat
+Pastikan perangkat Anda sudah terinstal:
 
 * [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/)
 * Git
-* **(Jika menggunakan WSL)** pastikan tersedia `dos2unix` untuk konversi file dengan line ending Windows.
-
-### 2. Jalankan Proyek
+* **(Opsional, jika menggunakan WSL)**
+  Instal `dos2unix` untuk menghindari masalah line ending (CRLF) pada file `.sh`.
 
 ```bash
-# Clone Repositori
+sudo apt update && sudo apt install dos2unix -y
+```
+
+---
+
+## 2. Clone Repositori
+
+```bash
 git clone https://github.com/ntfound-dev/AEGIS-Protocol.git
 cd AEGIS-Protocol
 ```
 
-> **Catatan untuk pengguna WSL:**
-> Jika Anda meng-clone repo ini di Windows dan menjalankannya di WSL, beberapa file `.sh` mungkin menggunakan line ending CRLF yang tidak dikenali Bash.
-> Jalankan perintah berikut sebelum menjalankan skrip:
+---
+
+## 3. Konversi Line Ending (Khusus Pengguna WSL/Windows)
+
+Jika Anda meng-clone repo ini di Windows lalu menjalankannya di WSL, beberapa file `.sh` mungkin tidak bisa dijalankan karena format line ending. Jalankan perintah berikut:
 
 ```bash
-sudo apt update && sudo apt install dos2unix -y
 dos2unix scripts/*.sh
 ```
 
+---
+
+## 4. Buat Kunci Identitas Action Agent
+
 ```bash
-# Buat kunci identitas Action Agent
 bash scripts/generate-keys.sh
 ```
 
+---
+
+## 5. Jalankan Layanan Backend
+
 ```bash
-# Build & jalankan semua layanan backend
+# Build service utama
 docker-compose build dfx-replica
+
+# Jalankan semua layanan
 docker-compose up --build
 ```
+
+---
+
+## 6. Jalankan Skrip Manual (Jika Diperlukan)
+
+Selain Docker, ada beberapa skrip yang bisa dijalankan langsung:
+
+```bash
+bash ./scripts/deploy-blockchain.sh
+bash ./scripts/run-agents.sh
+bash ./scripts/run-frontend.sh
+```
+
+---
+
+## 7. Identitas & Principal
+
+Untuk mendapatkan *principal* identitas, jalankan:
+
+```bash
+dfx identity get-principal
+```
+
+> Saat diminta password, gunakan default:
+> **Mei2000**
+
+---
+
 
 ## 📂 Struktur Proyek
 ```
@@ -128,7 +173,7 @@ aegis-protocol/
 │   │           ├── canister_ids.json  # File PENTING: berisi ID canister setelah deploy
 │   │           └── canisters/         #Berisi file .did (API) dan .wasm (kode terkompilasi).
 │   │
-│   └── 3-backend-ai-agents/      <------------ [UNTUK TIM AI]
+│   └── backend/      <------------ [UNTUK TIM AI]
 │       ├── requirements.txt       # Dependensi Python (uagents, requests, ic-py).     
 │       ├── Dockerfile             # Resep untuk membuat container Docker untuk agen. 
 │       ├── .env.example           # Contoh file environment.
@@ -140,7 +185,7 @@ aegis-protocol/
 │
 └── scripts/
     ├── deploy-blockchain.sh   # Skrip untuk deploy semua canister di 2-backend-blockchain-icp.
-    ├── run-agents.sh          # Skrip untuk jalankan semua agen Python di 3-backend-ai-agents.    
+    ├── run-agents.sh          # Skrip untuk jalankan semua agen Python di backend.    
     └──  generate-keys.sh      # Skrip untuk membuat identity.pem baru.
 ```
 ## 🎯 Rencana Masa Depan (Pasca-Hackathon)
