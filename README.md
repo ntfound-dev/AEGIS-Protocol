@@ -242,7 +242,7 @@ aegis-protocol/
 │   └── types/                    # Shared type definitions
 │
 ├── services/                     # Backend services and deployment
-│   ├── backend/                  # <------------ [FOR AI TEAM]
+│   ├── ai_agent/                  # <------------ [FOR AI TEAM]
 │   │   ├── requirements.txt      # Python dependencies (uagents, requests, ic-py)
 │   │   ├── Dockerfile            # Recipe for creating Docker container for agents
 │   │   ├── docker-compose.yml    # Docker Compose configuration for backend services

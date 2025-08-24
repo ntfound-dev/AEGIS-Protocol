@@ -6,21 +6,21 @@ sequenceDiagram
     participant Vault as <i class='fa fa-university'></i> Insurance Vault (IC)
     participant DAO as <i class='fa fa-users'></i> Event DAO (IC)
 
-    %% Fase 1: Off-Chain
-    note over Oracle, Validator: Fase 1: Deteksi & Validasi Off-Chain
-    Oracle->>Oracle: Ambil data dari API USGS/BMKG
-    Oracle->>Validator: Kirim RawEarthquakeData
-    Validator->>Validator: Terapkan logika validasi (perform_ai_validation)
-    Validator->>Action: Kirim ValidatedEvent (jika signifikan)
+    %% Phase 1: Off-Chain
+    note over Oracle, Validator: Phase 1: Off-Chain Detection & Validation
+    Oracle->>Oracle: Fetch data from USGS/BMKG API
+    Oracle->>Validator: Send RawEarthquakeData
+    Validator->>Validator: Apply validation logic (perform_ai_validation)
+    Validator->>Action: Send ValidatedEvent (if significant)
 
-    %% Fase 2: On-Chain
-    note over Action, DAO: Fase 2: Eksekusi & Penciptaan On-Chain
-    Action->>Factory: panggil update_raw("declare_event", event_data)
-    Factory->>DAO: Buat instance EventDAO baru
-    Factory->>Vault: panggil release_initial_funding(dao_principal_id)
-    Vault-->>Factory: Konfirmasi dana terkirim
-    Factory-->>Action: Kembalikan Principal ID DAO baru
+    %% Phase 2: On-Chain
+    note over Action, DAO: Phase 2: On-Chain Execution & Creation
+    Action->>Factory: call update_raw("declare_event", event_data)
+    Factory->>DAO: Create new EventDAO instance
+    Factory->>Vault: call release_initial_funding(dao_principal_id)
+    Vault-->>Factory: Confirm funds sent
+    Factory-->>Action: Return new DAO Principal ID
 
-    %% Fase 3: Konfirmasi
-    note over Action: Fase 3: Konfirmasi
-    Action->>Action: Log hasil sukses & Principal ID DAO baru
+    %% Phase 3: Confirmation
+    note over Action: Phase 3: Confirmation
+    Action->>Action: Log success result & new DAO Principal ID

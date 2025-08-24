@@ -1,79 +1,79 @@
-Desain Arsitektur Tingkat Tinggi Aegis Protocol
-Arsitektur Aegis Protocol dirancang secara sengaja dengan pendekatan hibrida berlapis (layered hybrid approach) untuk memaksimalkan kekuatan komputasi off-chain yang fleksibel dan keamanan serta transparansi dari komputasi on-chain.
+High-Level Architecture Design of Aegis Protocol
+The Aegis Protocol architecture is deliberately designed with a layered hybrid approach to maximize the strengths of flexible off-chain computing and the security and transparency of on-chain computing.
 
-Lapisan 1: Frontend (Presentation Layer)
-Lapisan ini adalah titik interaksi utama bagi pengguna manusia. Ia berjalan sepenuhnya di browser klien.
+Layer 1: Frontend (Presentation Layer)
+This layer is the main interaction point for human users. It runs entirely in the client browser.
 
-Tujuan: Menyediakan antarmuka yang reaktif dan intuitif untuk memonitor, berinteraksi, dan mengelola respons darurat.
+Purpose: Provide a reactive and intuitive interface for monitoring, interacting with, and managing emergency responses.
 
-Teknologi Utama:
+Core Technologies:
 
-HTML5 & CSS3: Untuk struktur dan gaya antarmuka.
+HTML5 & CSS3: For interface structure and styling.
 
-JavaScript (ES6 Modules): Untuk semua logika di sisi klien.
+JavaScript (ES6 Modules): For all client-side logic.
 
-Vite: Sebagai build tool dan development server modern.
+Vite: As a modern build tool and development server.
 
-@dfinity/auth-client: Pustaka resmi untuk integrasi dengan sistem otentikasi Internet Identity.
+@dfinity/auth-client: Official library for integration with Internet Identity authentication system.
 
-@dfinity/agent: Pustaka inti untuk membuat Actor dan berkomunikasi dengan canister di Internet Computer.
+@dfinity/agent: Core library for creating Actors and communicating with canisters on Internet Computer.
 
-Tanggung Jawab Utama:
+Main Responsibilities:
 
-Manajemen Sesi Pengguna: Menangani alur login dan logout melalui Internet Identity.
+User Session Management: Handle login and logout flows through Internet Identity.
 
-Interaksi Langsung dengan Canister: Membuat Actor untuk memanggil fungsi query (membaca data) dan update (mengubah data) pada canister EventDAO dan DID/SBT Ledger atas nama pengguna yang terotentikasi.
+Direct Canister Interaction: Create Actors to call query functions (read data) and update functions (modify data) on EventDAO and DID/SBT Ledger canisters on behalf of authenticated users.
 
-Komunikasi dengan Lapisan Off-Chain: Mengirim perintah dalam bahasa alami (chat) atau data terstruktur melalui fetch API ke endpoint yang disediakan oleh Validator Agent.
+Off-Chain Layer Communication: Send natural language commands (chat) or structured data through fetch API to endpoints provided by Validator Agent.
 
-Rendering State: Menampilkan data dari canister (seperti daftar proposal) dan pesan dari AI Agent secara real-time di UI.
+State Rendering: Display data from canisters (such as proposal lists) and messages from AI Agents in real-time in the UI.
 
-Lapisan 2: Layanan Off-Chain (AI Agents & Business Logic Layer)
-Lapisan ini adalah "otak" dan "sistem saraf" dari protokol. Ia berjalan di lingkungan server yang terkontrol (di-deploy menggunakan Docker) dan tidak terekspos langsung ke dunia luar selain melalui endpoint API yang spesifik.
+Layer 2: Off-Chain Services (AI Agents & Business Logic Layer)
+This layer is the "brain" and "nervous system" of the protocol. It runs in a controlled server environment (deployed using Docker) and is not directly exposed to the outside world except through specific API endpoints.
 
-Tujuan: Mengotomatiskan akuisisi data, melakukan validasi kompleks, dan bertindak sebagai jembatan yang aman antara dunia nyata dan blockchain.
+Purpose: Automate data acquisition, perform complex validation, and act as a secure bridge between the real world and blockchain.
 
-Teknologi Utama:
+Core Technologies:
 
-Python 3: Bahasa pemrograman utama untuk semua agent.
+Python 3: Main programming language for all agents.
 
-uagents Framework: Kerangka kerja untuk membangun agen-agen otonom yang dapat berkomunikasi satu sama lain.
+uagents Framework: Framework for building autonomous agents that can communicate with each other.
 
-ic-py: Pustaka untuk memungkinkan skrip Python berinteraksi (membuat transaksi, memanggil canister) dengan jaringan Internet Computer.
+ic-py: Library to enable Python scripts to interact (create transactions, call canisters) with the Internet Computer network.
 
-Docker & Docker Compose: Untuk mengemas, mengisolasi, dan mengorkestrasi ketiga service agent.
+Docker & Docker Compose: For packaging, isolating, and orchestrating the three agent services.
 
-Tanggung Jawab Utama:
+Main Responsibilities:
 
-Akuisisi Data (Oracle Agent): Mengambil data dari berbagai API eksternal secara berkala.
+Data Acquisition (Oracle Agent): Retrieve data from various external APIs periodically.
 
-Validasi dan Pengayaan (Validator Agent): Menerapkan logika bisnis untuk memfilter dan memvalidasi data. Ini adalah tempat di mana model AI/ML dapat diintegrasikan di masa depan.
+Validation and Enrichment (Validator Agent): Apply business logic to filter and validate data. This is where AI/ML models can be integrated in the future.
 
-Eksposur API: Menyediakan endpoint HTTP (misalnya /chat) yang aman untuk dikonsumsi oleh frontend.
+API Exposure: Provide secure HTTP endpoints (e.g., /chat) for consumption by the frontend.
 
-Eksekusi Otomatis On-Chain (Action Agent): Bertindak sebagai proksi terpercaya yang memiliki identitas kriptografis (identity.pem) untuk memanggil fungsi yang memerlukan otorisasi khusus di lapisan blockchain.
+Automatic On-Chain Execution (Action Agent): Act as a trusted proxy with cryptographic identity (identity.pem) to call functions requiring special authorization in the blockchain layer.
 
-Lapisan 3: Blockchain (On-Chain Logic & Persistence Layer)
-Lapisan ini adalah fondasi kepercayaan dari sistem. Ia berjalan di jaringan terdesentralisasi Internet Computer.
+Layer 3: Blockchain (On-Chain Logic & Persistence Layer)
+This layer is the trust foundation of the system. It runs on the decentralized Internet Computer network.
 
-Tujuan: Menyediakan platform yang transparan, tidak dapat diubah, dan selalu aktif untuk tata kelola, manajemen dana, dan pencatatan identitas.
+Purpose: Provide a transparent, immutable, and always-active platform for governance, fund management, and identity recording.
 
-Teknologi Utama:
+Core Technologies:
 
-Motoko: Bahasa pemrograman yang dirancang khusus untuk Internet Computer, menawarkan keamanan tipe yang kuat.
+Motoko: Programming language specifically designed for Internet Computer, offering strong type safety.
 
-Internet Computer (IC): Platform blockchain yang menjalankan smart contract (canisters) pada kecepatan web.
+Internet Computer (IC): Blockchain platform that runs smart contracts (canisters) at web speed.
 
-dfx SDK: Perangkat baris perintah untuk mengelola siklus hidup pengembangan canister (membuat, men-deploy, meng-upgrade).
+dfx SDK: Command-line tool for managing canister development lifecycle (create, deploy, upgrade).
 
-Tanggung Jawab Utama:
+Main Responsibilities:
 
-Pabrik Smart Contract (Event Factory): Secara dinamis men-deploy canister baru sebagai respons terhadap peristiwa yang divalidasi.
+Smart Contract Factory (Event Factory): Dynamically deploy new canisters in response to validated events.
 
-Tata Kelola Terdesentralisasi (Event DAO): Mengelola proposal, voting, dan perbendaharaan dana secara transparan untuk setiap bencana.
+Decentralized Governance (Event DAO): Manage proposals, voting, and fund treasury transparently for each disaster.
 
-Manajemen Likuiditas (Insurance Vault): Menyimpan dan mencairkan dana awal secara terprogram.
+Liquidity Management (Insurance Vault): Store and disburse initial funds programmatically.
 
-Registri Identitas (DID/SBT Ledger): Bertindak sebagai sumber kebenaran tunggal untuk profil pengguna dan kredensial reputasi mereka.
+Identity Registry (DID/SBT Ledger): Act as a single source of truth for user profiles and their reputation credentials.
 
-Penyimpanan State Permanen: Semua data penting (transaksi, suara, profil) disimpan secara permanen di state canister.
+Permanent State Storage: All important data (transactions, votes, profiles) is permanently stored in canister state.

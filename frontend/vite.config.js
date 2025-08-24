@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import path from "path";
 import fs from "fs";
 
-// Fungsi untuk mendapatkan path ke file canister_ids.json
+// Function to get path to canister_ids.json file
 function getCanisterIds() {
   const network = process.env.DFX_NETWORK || "local";
   const canisterIdsPath = path.resolve(__dirname, "..", ".dfx", network, "canister_ids.json");
@@ -15,7 +15,7 @@ function getCanisterIds() {
   return canisterIds;
 }
 
-// Fungsi untuk membuat variabel lingkungan untuk Vite
+// Function to create environment variables for Vite
 function createEnvVars() {
   const canisterIds = getCanisterIds();
   const env = {};
@@ -26,22 +26,22 @@ function createEnvVars() {
   return env;
 }
 
-// Konfigurasi Vite
+// Vite Configuration
 export default defineConfig({
-  // Bagian ini sudah benar untuk environment variables
+  // This section is already correct for environment variables
   define: createEnvVars(),
 
-  // ===== BLOK YANG DIREVISI =====
+  // ===== REVISED BLOCK =====
   resolve: {
     alias: {
-      // ".." berarti "naik satu level folder" (dari /frontend ke /)
-      // lalu masuk ke "src/declarations"
+      // ".." means "go up one folder level" (from /frontend to /)
+      // then enter "src/declarations"
       "@declarations": path.resolve(__dirname, "..", "src", "declarations"),
     },
   },
   // ============================
 
-  // Konfigurasi proxy server Anda sudah benar
+  // Your proxy server configuration is already correct
   server: {
     proxy: {
       "/api": {

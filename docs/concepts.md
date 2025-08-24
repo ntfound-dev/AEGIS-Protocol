@@ -1,67 +1,67 @@
-Konsep dan Terminologi Inti Aegis Protocol
-Dokumen ini berfungsi sebagai kamus untuk memahami istilah-istilah kunci dan komponen fundamental yang membentuk ekosistem Aegis Protocol.
+Core Concepts and Terminology of Aegis Protocol
+This document serves as a dictionary for understanding key terms and fundamental components that form the Aegis Protocol ecosystem.
 
-Konsep Off-Chain (Dunia AI Agents)
-Komponen-komponen ini berjalan di luar blockchain (di server/Docker) dan bertugas mengamati serta berinteraksi dengan dunia nyata.
+Off-Chain Concepts (AI Agents World)
+These components run outside the blockchain (on servers/Docker) and are responsible for observing and interacting with the real world.
 
 Oracle Agent
-Analogi: Seorang pengintai di menara pengawas.
+Analogy: A scout in a watchtower.
 
-Tugas: Tugasnya sangat spesifik: terus-menerus memantau sumber data eksternal yang telah ditentukan (API gempa USGS, BMKG, dll.). Ketika ia melihat "sesuatu" (data baru), ia tidak menganalisisnya, ia hanya meneriakkan apa yang ia lihat ("Laporan baru dari USGS!") ke Validator Agent. Ia adalah mata dan telinga sistem.
+Task: Its task is very specific: continuously monitor predetermined external data sources (USGS earthquake API, BMKG, etc.). When it sees "something" (new data), it doesn't analyze it, it just shouts out what it sees ("New report from USGS!") to the Validator Agent. It is the eyes and ears of the system.
 
 Validator Agent
-Analogi: Seorang analis intelijen di ruang komando.
+Analogy: An intelligence analyst in the command room.
 
-Tugas: Ia menerima laporan mentah dari para pengintai (Oracle Agent) dan juga dari operator manusia (input chat di frontend). Tugasnya adalah:
+Task: It receives raw reports from scouts (Oracle Agent) and also from human operators (chat input in frontend). Its task is to:
 
-Memfilter Kebisingan: Memastikan laporan tersebut memiliki format yang benar.
+Filter Noise: Ensure the report has the correct format.
 
-Menganalisis Signifikansi: Menerapkan logika (saat ini berdasarkan magnitudo) untuk memutuskan apakah laporan ini cukup penting untuk ditindaklanjuti.
+Analyze Significance: Apply logic (currently based on magnitude) to decide whether this report is important enough to act upon.
 
-Menyusun Laporan Resmi: Mengubah data mentah yang berantakan menjadi sebuah laporan standar yang bersih dan terstruktur (ValidatedEvent).
+Compose Official Report: Transform messy raw data into a clean and structured standard report (ValidatedEvent).
 
-Memberi Perintah: Jika sebuah laporan dianggap valid dan signifikan, ia akan memberi perintah kepada Action Agent untuk bertindak.
+Give Commands: If a report is deemed valid and significant, it will command the Action Agent to act.
 
 Action Agent (The Bridge)
-Analogi: Seorang utusan resmi dengan segel kerajaan.
+Analogy: An official messenger with a royal seal.
 
-Tugas: Ia adalah satu-satunya entitas off-chain yang dipercaya untuk berbicara langsung dengan dunia on-chain (blockchain). Ia tidak memiliki kecerdasan untuk menganalisis, ia hanya mengeksekusi perintah. Ketika Validator Agent memberinya laporan resmi (ValidatedEvent), ia akan pergi ke Event Factory di blockchain, menunjukkan "segel"-nya (identity.pem), dan berkata, "Atas perintah dari ruang komando, nyatakan peristiwa darurat ini!"
+Task: It is the only off-chain entity trusted to speak directly with the on-chain world (blockchain). It has no intelligence to analyze, it only executes commands. When the Validator Agent gives it an official report (ValidatedEvent), it will go to the Event Factory on the blockchain, show its "seal" (identity.pem), and say, "By command of the command room, declare this emergency event!"
 
-Konsep On-Chain (Dunia Blockchain/Canisters)
-Komponen-komponen ini hidup di Internet Computer. Mereka adalah fondasi yang transparan dan tidak dapat diubah dari sistem.
+On-Chain Concepts (Blockchain/Canisters World)
+These components live on the Internet Computer. They are the transparent and immutable foundation of the system.
 
 Internet Identity
-Analogi: Paspor digital universal.
+Analogy: Universal digital passport.
 
-Tugas: Ini adalah sistem otentikasi terdesentralisasi dari Internet Computer. Pengguna tidak membuat username/password di aplikasi kita. Sebaliknya, mereka login menggunakan Internet Identity mereka, yang memberikan mereka sebuah Principal ID (seperti nomor paspor) yang unik dan aman di seluruh ekosistem IC.
+Task: This is the decentralized authentication system from Internet Computer. Users don't create username/password in our application. Instead, they login using their Internet Identity, which gives them a unique and secure Principal ID (like a passport number) across the entire IC ecosystem.
 
 Event Factory
-Analogi: Sebuah pabrik perakitan otomatis.
+Analogy: An automated assembly factory.
 
-Tugas: Canister ini hanya memiliki satu pekerjaan: menerima perintah yang sah dari Action Agent. Ketika perintah diterima, "lini perakitan" di pabrik ini akan secara otomatis membuat dan men-deploy sebuah Event DAO baru yang sudah dikonfigurasi sepenuhnya.
+Task: This canister has only one job: receive valid commands from the Action Agent. When a command is received, the "assembly line" in this factory will automatically create and deploy a new, fully configured Event DAO.
 
 Insurance Vault
-Analogi: Sebuah brankas bank yang diasuransikan.
+Analogy: An insured bank vault.
 
-Tugas: Ini adalah canister tempat para penyandang dana (funder) menyimpan dana likuiditas awal. Ketika Event Factory membuat DAO baru, ia memiliki otorisasi untuk menarik sejumlah dana awal dari brankas ini (berdasarkan tingkat keparahan bencana) untuk "menyuntikkan modal" ke perbendaharaan DAO yang baru dibuat.
+Task: This is a canister where funders store initial liquidity funds. When the Event Factory creates a new DAO, it has authorization to withdraw a certain amount of initial funds from this vault (based on disaster severity) to "inject capital" into the newly created DAO's treasury.
 
 Event DAO
-Analogi: Sebuah ruang rapat darurat dan rekening bank transparan untuk satu bencana spesifik.
+Analogy: An emergency meeting room and transparent bank account for one specific disaster.
 
-Tugas: Ini adalah pusat komando on-chain untuk satu peristiwa. Di dalamnya, para pemangku kepentingan yang terverifikasi dapat:
+Task: This is the on-chain command center for one event. Inside it, verified stakeholders can:
 
-Mengajukan Proposal: "Kami butuh dana sebesar X untuk membeli Y."
+Submit Proposals: "We need funds of X amount to buy Y."
 
-Memberikan Suara (Vote): Menyetujui atau menolak proposal.
+Vote: Approve or reject proposals.
 
-Memberikan Donasi: Menambah dana ke perbendaharaan (treasury_balance).
-Semua aktivitas ini tercatat secara publik dan permanen.
+Donate: Add funds to the treasury (treasury_balance).
+All these activities are recorded publicly and permanently.
 
 DID/SBT Ledger
-Analogi: Kantor catatan sipil dan album prestasi di blockchain.
+Analogy: Civil registry office and achievement album on blockchain.
 
-Tugas:
+Task:
 
-DIDProfile (Akta Kelahiran): Mencatat pendaftaran identitas seorang pengguna atau organisasi, mengaitkan Principal ID mereka dengan nama.
+DIDProfile (Birth Certificate): Records a user's or organization's identity registration, linking their Principal ID with a name.
 
-SBT (Lencana/Sertifikat Prestasi): Ketika seorang pengguna melakukan aksi penting (seperti berdonasi di sebuah Event DAO), canister ini akan mencetak "lencana" digital yang tidak bisa dipindahtangankan untuk mereka. Ini membangun rekam jejak reputasi yang terverifikasi.
+SBT (Badge/Achievement Certificate): When a user performs important actions (such as donating in an Event DAO), this canister will mint a non-transferable digital "badge" for them. This builds a verified reputation track record.
