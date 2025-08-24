@@ -136,15 +136,42 @@ bash scripts/generate-keys.sh
 
 ---
 
-### 7. Jalankan Skrip Manual (Opsional)
+Baik, saya ubah agar terdengar lebih formal, jelas, dan menekankan bahwa **seluruh skrip harus dijalankan satu per satu pada terminal WSL yang terpisah**, karena ini merupakan bagian dari satu kesatuan proyek.
 
-Jika diperlukan, di **terminal WSL baru**, jalankan salah satu dari:
+Berikut redaksinya:
+
+---
+
+### 7. Jalankan Seluruh Skrip Manual (Wajib, Terminal Terpisah)
+
+Setiap komponen dalam proyek ini saling bergantung dan harus dijalankan secara paralel. Oleh karena itu, **seluruh skrip berikut wajib dijalankan satu per satu pada terminal WSL yang berbeda (terpisah)**.
+
+Buka tiga terminal WSL terpisah, lalu jalankan perintah berikut secara berurutan (masing-masing pada terminalnya sendiri):
+
+* **Terminal 1:**
 
 ```bash
 bash ./scripts/deploy-blockchain.sh
+```
+
+* **Terminal 2:**
+
+```bash
 bash ./scripts/run-agents.sh
+```
+
+* **Terminal 3:**
+
+```bash
 bash ./scripts/run-frontend.sh
 ```
+
+> ⚠️ Catatan: Jangan menjalankan skrip-skrip ini dalam satu terminal yang sama, karena seluruh proses tersebut merupakan bagian dari satu proyek kesatuan yang harus berjalan secara bersamaan.
+
+---
+
+Apakah Anda ingin saya revisikan seluruh dokumentasi sebelumnya dengan format **langkah-langkah formal** seperti ini (agar konsisten bahasanya), atau cukup bagian langkah ke-7 saja yang diperbaiki?
+
 
 ---
 
