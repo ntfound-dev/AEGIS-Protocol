@@ -175,54 +175,84 @@ docker-compose up --build
 ## 📂 Struktur Proyek
 ```
 aegis-protocol/
-├── .gitignore           # Mengabaikan file yang tidak perlu (build artifacts, .env, .pem, dll.)
-├── README.md            # Dokumentasi utama: cara instalasi, setup, dan menjalankan setiap layanan.
-├── docker-compose.yml   #Untuk menjalankan semua layanan backend dengan satu perintah.
+├── .gitignore                    # Mengabaikan file yang tidak perlu (build artifacts, .env, .pem, dll.)
+├── README.md                     # Dokumentasi utama: cara instalasi, setup, dan menjalankan setiap layanan.
+├── Dockerfile                    # Docker configuration untuk root project
+├── dfx.json                      # File konfigurasi utama untuk DFINITY SDK (dfx)
+├── mops.toml                     # Motoko package manager configuration
+├── .env                          # Environment variables (generated dari env.example)
+├── env.example                   # Template file environment
+├── identity.pem                  # Kunci identitas utama (diabaikan oleh gitignore)
+├── install-mops.sh               # Script untuk menginstall Motoko package manager
+├── .ic-assets.json5              # Internet Computer assets configuration
 │
-├── docs/
-│   ├── architecture.md # Penjelasan teknis arsitektur secara mendalam.
-│   ├── concepts.md          # Penjelasan visi dan konsep inti dari Aegis Protocol.
-│    └── diagrams/      
-│       └── endgame_architecture.mermaid    # File diagram Mermaid 
+├── docs/                         # Dokumentasi lengkap proyek
+│   ├── architecture.md           # Penjelasan teknis arsitektur secara mendalam
+│   ├── concepts.md               # Penjelasan visi dan konsep inti dari Aegis Protocol
+│   ├── diagram.md                # Dokumentasi diagram
+│   ├── diagram.mermaid           # File diagram Mermaid
+│   └── problem_and_solution_technical.md  # Analisis teknis masalah dan solusi
 │
-├── services/  <-- FOLDER UTAMA SEMUA KODE APLIKASI
-│   │
-│   ├── 1-frontend-dasbor-demo/  <------------ [ UNTUK TIM FRONTEND ]
-│   │   ├── index.html            # Halaman utama untuk Dasbor Demo.
-│   │   ├── style.css             # styling halaman.
-│   │   └── script.js             # Logika untuk mengirim "pesan obrolan" ke agen AI.
-│   │                             # kalau ada tambahan lain silahkan 
-│   ├── 2-backend-blockchain-icp/  <---------- [ UNTUK TIM BLOCKCHAIN ]
-│   │   ├── dfx.json              # File konfigurasi utama untuk DFINITY SDK (dfx).
-│   │   ├── src/                  # Folder semua source code canister.
-│   │   │   ├── event_factory/    
-│   │   │   │   └── main.mo       # Canister (pabrik) untuk membuat EventDAO. 
-│   │   │   ├── event_dao/        
-│   │   │   │   └── main.mo       # Template canister untuk setiap bencana.
-│   │   │   ├── did_sbt_ledger/   
-│   │   │   │   └── main.mo       # Canister untuk identitas dan reputasi.
-│   │   │   └── insurance_vault/
-│   │   │       └── main.mo       # Canister brankas asuransi parametrik.
-│   │   └── .dfx/                 # Folder yang dibuat otomatis oleh dfx, berisi hasil build.
-│   │       └── local/            
-│   │           ├── canister_ids.json  # File PENTING: berisi ID canister setelah deploy
-│   │           └── canisters/         #Berisi file .did (API) dan .wasm (kode terkompilasi).
-│   │
-│   └── backend/      <------------ [UNTUK TIM AI]
-│       ├── requirements.txt       # Dependensi Python (uagents, requests, ic-py).     
-│       ├── Dockerfile             # Resep untuk membuat container Docker untuk agen. 
-│       ├── .env.example           # Contoh file environment.
-│       ├── identity.pem           # Kunci identitas untuk Action Agent (diabaikan oleh gitignore).
-│       └── agents/ 
-│           ├── oracle_agent.py     # Agen yang memantau data dunia nyata.
-│           ├── validator_agent.py  # Agen yang memvalidasi data bencana.
-│           └── action_agent.py     # Agen yang menjadi jembatan ke ICP.
+├── frontend/                     # <------------ [ UNTUK TIM FRONTEND ]
+│   ├── index.html                # Halaman utama untuk Dashboard Demo
+│   ├── main.js                   # Logika utama frontend (menggantikan script.js)
+│   ├── style.css                 # Styling halaman
+│   ├── package.json              # Node.js dependencies untuk frontend
+│   ├── package-lock.json         # Lock file untuk dependencies
+│   ├── vite.config.js            # Vite configuration untuk development server
+│   └── node_modules/             # Node.js modules (auto-generated)
 │
-└── scripts/
-    ├── deploy-blockchain.sh   # Skrip untuk deploy semua canister di 2-backend-blockchain-icp.
-    ├── run-agents.sh          # Skrip untuk jalankan semua agen Python di backend.    
-    └──  generate-keys.sh      # Skrip untuk membuat identity.pem baru.
+├── src/                          # <------------ [ UNTUK TIM BLOCKCHAIN ]
+│   ├── declarations/             # Auto-generated TypeScript/JavaScript bindings
+│   │   ├── did_sbt_ledger/       # TypeScript declarations untuk DID SBT Ledger
+│   │   ├── event_dao/            # TypeScript declarations untuk Event DAO
+│   │   ├── event_factory/        # TypeScript declarations untuk Event Factory
+│   │   ├── frontend/             # TypeScript declarations untuk Frontend canister
+│   │   └── insurance_vault/      # TypeScript declarations untuk Insurance Vault
+│   ├── did_sbt_ledger/
+│   │   └── main.mo               # Canister untuk identitas dan reputasi (DID & SBT)
+│   ├── event_dao/
+│   │   ├── main.mo               # Template canister untuk setiap bencana
+│   │   ├── event_defs.mo         # Definisi event dan struktur data
+│   │   └── types.mo              # Type definitions untuk Event DAO
+│   ├── event_factory/
+│   │   ├── main.mo               # Canister (pabrik) untuk membuat EventDAO
+│   │   └── types.mo              # Type definitions untuk Event Factory
+│   ├── insurance_vault/
+│   │   └── main.mo               # Canister brankas asuransi parametrik
+│   └── types/                    # Shared type definitions
+│
+├── services/                     # Layanan backend dan deployment
+│   ├── backend/                  # <------------ [UNTUK TIM AI]
+│   │   ├── requirements.txt      # Dependensi Python (uagents, requests, ic-py)
+│   │   ├── Dockerfile            # Resep untuk membuat container Docker untuk agen
+│   │   ├── docker-compose.yml    # Docker Compose configuration untuk backend services
+│   │   ├── .env.example          # Template environment untuk backend
+│   │   ├── persistent/           # Data persisten untuk development
+│   │   │   ├── dfx-local/        # Local dfx data
+│   │   │   └── identity.pem      # Identity key untuk backend agents
+│   │   └── agents/               # Folder semua AI agents
+│   │       ├── oracle_agent.py   # Agen yang memantau data dunia nyata
+│   │       ├── validator_agent.py # Agen yang memvalidasi data bencana
+│   │       ├── action_agent.py   # Agen yang menjembatani ke ICP
+│   │       └── chatbotrepair/    # Chatbot repair agents
+│   │           ├── asi_one.py    # ASI.One integration agent
+│   │           └── functions.py  # Utility functions untuk chatbot
+│   └── dfx/
+│       └── Dockerfile            # Docker configuration untuk DFX service
+│
+├── .dfx/                         # Folder yang dibuat otomatis oleh dfx (build artifacts)
+│   ├── local/                    # Local deployment artifacts
+│   └── network/                  # Network deployment artifacts
+│
+└── scripts/                      # Automation scripts
+    ├── deploy-blockchain.sh      # Skrip untuk deploy semua canister
+    ├── run-agents.sh             # Skrip untuk menjalankan semua agen Python
+    ├── run-frontend.sh           # Skrip untuk menjalankan frontend development server
+    └── generate-keys.sh          # Skrip untuk membuat identity.pem baru
 ```
+
+
 ## 🎯 Rencana Masa Depan (Pasca-Hackathon)
 
 * *Q4 2025:* Peluncuran Testnet, mengundang 5 NGO mitra pertama untuk uji coba.
