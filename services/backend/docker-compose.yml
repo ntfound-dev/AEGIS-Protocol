@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: python /app/agents/validator_agent.py
+    command: python /app/agents/chatbotrepair/asi_one.py
     env_file:
       - ../../.env
     environment:

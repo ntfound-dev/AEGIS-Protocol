@@ -23,12 +23,26 @@ class StructuredOutputResponse(Model):
 # Replace this with your AI agent address
 AI_AGENT_ADDRESS = "agent1qtlpfshtlcxekgrfcpmv7m9zpajuwu7d5jfyachvpa4u3dkt6k0uwwp2lct"
 
-agent = Agent()
+agent = Agent(
+    name="chatbot_repair_agent",
+    port=8002,
+    seed="chatbot_repair_seed_phrase",
+    endpoint=["http://localhost:8002/submit"]
+)
 
 chat_proto = Protocol(spec=chat_protocol_spec)
 struct_output_client_proto = Protocol(
     name="StructuredOutputClientProtocol", version="0.1.0"
 )
+
+# HTTP protocol for web requests
+http_protocol = Protocol("ChatbotHTTP")
+
+class ChatRequest(Model):
+    message: str
+
+class ChatResponse(Model):
+    reply: str
 
 def create_text_chat(text: str, end_session: bool = False) -> ChatMessage:
     content = [TextContent(type="text", text=text)]
@@ -137,9 +151,72 @@ async def handle_structured_output_response(
 
     await ctx.send(session_sender, chat_message)
 
+@http_protocol.on_query(model=ChatRequest, replies=ChatResponse)
+async def handle_http_chat(ctx: Context, sender: str, msg: ChatRequest):
+    """Handle HTTP chat requests from the frontend."""
+    ctx.logger.info(f"Received HTTP chat request: {msg.message}")
+    
+    user_message = msg.message.lower().strip()
+    
+    # Check if it's an earthquake query
+    if any(keyword in user_message for keyword in ["earthquake", "gempa", "quake", "seismic"]):
+        # Extract location from the message
+        # Simple extraction - look for location keywords
+        import re
+        
+        # Try to extract location patterns
+        location_patterns = [
+            r"earthquake(?:\s+(?:in|at|near))?\s+([a-zA-Z\s]+?)(?:\s+magnitude|\s+mag|$)",
+            r"gempa(?:\s+(?:di|pada))?\s+([a-zA-Z\s]+?)(?:\s+magnitudo|\s+magnitude|$)",
+            r"(?:alert|sinyal)(?:\s+(?:for|untuk))?\s+([a-zA-Z\s]+?)(?:\s+magnitude|\s+magnitudo|$)",
+            r"([a-zA-Z\s]+?)(?:\s+earthquake|\s+gempa)"
+        ]
+        
+        location = None
+        for pattern in location_patterns:
+            match = re.search(pattern, user_message, re.IGNORECASE)
+            if match:
+                location = match.group(1).strip()
+                break
+        
+        if not location:
+            # Default locations based on common terms
+            if "haiti" in user_message:
+                location = "Haiti"
+            elif "indonesia" in user_message:
+                location = "Indonesia"
+            elif "japan" in user_message:
+                location = "Japan"
+            elif "california" in user_message:
+                location = "California"
+            else:
+                location = "Indonesia"  # Default
+        
+        try:
+            # Call the earthquake function directly
+            ctx.logger.info(f"Getting earthquake data for location: {location}")
+            result = get_earthquakes(location, 200, 7)
+            reply = result.get("earthquakes", f"No earthquake data available for {location}.")
+            
+            # Add some formatting to make the response more user-friendly
+            if "No earthquakes found" in reply:
+                reply = f"🟢 Good news! No significant earthquakes found within 200 km of {location} in the past 7 days."
+            elif "earthquakes" in reply.lower() and "within" in reply.lower():
+                reply = f"🚨 {reply}"
+            
+            return ChatResponse(reply=reply)
+        except Exception as e:
+            ctx.logger.error(f"Error getting earthquake data: {e}")
+            return ChatResponse(reply=f"Sorry, I couldn't get earthquake data for {location}. This might be due to network issues or the location not being found. Please try again with a different location.")
+    
+    else:
+        # General response for non-earthquake queries
+        return ChatResponse(reply="Hello! I'm the Aegis Emergency Response Assistant. I can help you get earthquake information. Try asking about earthquakes in a specific location, like 'earthquake alert haiti magnitude 7.8'")
+
 # Include protocols and run the agent
 agent.include(chat_proto, publish_manifest=True)
 agent.include(struct_output_client_proto, publish_manifest=True)
+agent.include(http_protocol, publish_manifest=True)
 
 if __name__ == "__main__":
     agent.run()
