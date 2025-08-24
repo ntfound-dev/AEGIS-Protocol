@@ -50,16 +50,6 @@ Berikut adalah detail dari agen-agen yang berjalan di Fetch.ai, sesuai dengan pe
 
 ---
 
-
-Siap 👍, saya update lagi dokumennya sesuai permintaan:
-
-* Tambahkan **note membuat `.env` dari `env.example`** di root.
-* Langkah **Jalankan Layanan Backend (docker-compose)** dipindahkan ke paling akhir (karena masih ada error).
-
-Berikut hasil revisi:
-
----
-
 # 🚀 Cara Menjalankan Proyek (Pengembangan Lokal) – *WSL Version*
 
 Proyek ini menggunakan **Docker Compose** untuk mempermudah proses setup dan eksekusi.
@@ -136,12 +126,6 @@ bash scripts/generate-keys.sh
 
 ---
 
-Baik, saya ubah agar terdengar lebih formal, jelas, dan menekankan bahwa **seluruh skrip harus dijalankan satu per satu pada terminal WSL yang terpisah**, karena ini merupakan bagian dari satu kesatuan proyek.
-
-Berikut redaksinya:
-
----
-
 ### 7. Jalankan Seluruh Skrip Manual (Wajib, Terminal Terpisah)
 
 Setiap komponen dalam proyek ini saling bergantung dan harus dijalankan secara paralel. Oleh karena itu, **seluruh skrip berikut wajib dijalankan satu per satu pada terminal WSL yang berbeda (terpisah)**.
@@ -167,10 +151,6 @@ bash ./scripts/run-frontend.sh
 ```
 
 > ⚠️ Catatan: Jangan menjalankan skrip-skrip ini dalam satu terminal yang sama, karena seluruh proses tersebut merupakan bagian dari satu proyek kesatuan yang harus berjalan secara bersamaan.
-
----
-
-Apakah Anda ingin saya revisikan seluruh dokumentasi sebelumnya dengan format **langkah-langkah formal** seperti ini (agar konsisten bahasanya), atau cukup bagian langkah ke-7 saja yang diperbaiki?
 
 
 ---
