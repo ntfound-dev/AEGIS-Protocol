@@ -177,7 +177,7 @@ sudo apt update
 sudo apt install nodejs npm -y
 
 # Install MOPS globally
-npm install -g ic-mops
+sudo -i npm install -g ic-mops
 ```
 
 **Method 2: Direct installation**
@@ -188,6 +188,11 @@ sh -ci "$(curl -fsSL https://j4mwm-bqaaa-aaaam-qajbq-cai.ic0.app/install.sh)"
 Verify the installation:
 ```bash
 mops --version
+```
+
+Initialize the MOPS toolchain:
+```bash
+mops toolchain init
 ```
 
 Install project dependencies:
