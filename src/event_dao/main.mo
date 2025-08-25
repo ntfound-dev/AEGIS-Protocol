@@ -1,5 +1,3 @@
-// File: src/event_dao/main.mo (Versi Final yang Sudah Diperbaiki)
-
 import TrieMap "mo:base/TrieMap";
 import Buffer "mo:base/Buffer";
 import Types "types";
@@ -7,13 +5,13 @@ import Principal "mo:base/Principal";
 import Nat "mo:base/Nat";
 import Nat32 "mo:base/Nat32";
 import Hash "mo:base/Hash";
-import Debug "mo:base/Debug"; // --- PERBAIKAN --- Ditambahkan untuk 'trap'
+import Debug "mo:base/Debug";
 import EventDefs "event_defs";
 import SbtLedger "canister:did_sbt_ledger";
 
 persistent actor EventDAO {
 
-    // --- State Variables (Tidak ada perubahan) ---
+    
     var treasury_balance : Nat = 0;
 
     func customNatHash(n : Nat) : Hash.Hash { Nat32.fromNat(n % 4294967296); };
@@ -28,7 +26,6 @@ persistent actor EventDAO {
     transient var event_details : ?Types.ValidatedEventData = null;
     transient var factory_principal : ?Principal = null;
 
-    // --- PERBAIKAN --- Mengembalikan isi fungsi yang sebelumnya kosong ---
     public shared func initialize(args: Types.InitArgs) : async Text {
         if (factory_principal != null) {
             return "Already initialized.";
@@ -84,7 +81,6 @@ persistent actor EventDAO {
         nextProposalId += 1;
         return "Proposal submitted with ID: " # Nat.toText(pid);
     };
-    // --- AKHIR DARI FUNGSI YANG DIKEMBALIKAN ISINYA ---
 
     public shared(msg) func donateAndVote(
         amount: Nat,
@@ -92,9 +88,9 @@ persistent actor EventDAO {
         in_favor: Bool
     ) : async Text {
         _donate(msg.caller, amount);
-        let vote_msg = await _vote(msg.caller, proposalId, in_favor); // --- PERBAIKAN --- Menambahkan 'await'
+        let vote_msg = await _vote(msg.caller, proposalId, in_favor);
         if (vote_msg != "Vote cast successfully.") {
-            Debug.trap("Voting failed: " # vote_msg); // --- PERBAIKAN --- Menggunakan Debug.trap
+            Debug.trap("Voting failed: " # vote_msg);
         };
 
         let event_name = switch(event_details) {
@@ -113,7 +109,7 @@ persistent actor EventDAO {
             return "Thank you! Donation and vote have been recorded. Your participation SBT has been minted.";
           };
           case (#err(error_message)) {
-            Debug.trap("FATAL: Your donation and vote were recorded, but SBT minting failed: " # error_message); // --- PERBAIKAN --- Menggunakan Debug.trap
+            Debug.trap("FATAL: Your donation and vote were recorded, but SBT minting failed: " # error_message);
           };
         };
     };
@@ -125,8 +121,12 @@ persistent actor EventDAO {
         };
         treasury_balance += amount;
     };
+   
+    public shared(msg) func donate(amount: Nat) : async Text {
+        _donate(msg.caller, amount);
+        return "Thank you for your donation of " # Nat.toText(amount) # " units.";
+    };
 
-    // --- PERBAIKAN --- Menambahkan 'async' pada signature fungsi _vote
     private func _vote(caller: Principal, proposalId: EventDefs.ProposalId, in_favor: Bool) : async Text {
         switch (proposals.get(proposalId)) {
             case (null) { return "Proposal not found."; };
