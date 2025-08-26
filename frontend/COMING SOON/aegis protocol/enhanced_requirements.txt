@@ -1,0 +1,49 @@
+aiohttp>=3.8.0
+requests>=2.28.0
+websockets>=10.0
+
+# Data processing (optional tapi recommended)
+numpy>=1.21.0
+pandas>=1.3.0
+
+# Blockchain integration
+web3>=6.0.0
+cryptography>=3.4.0
+
+# Database dan caching
+sqlalchemy>=1.4.0
+redis>=4.0.0
+
+# Task management
+celery>=5.2.0
+
+# API dan networking
+uvicorn>=0.18.0
+fastapi>=0.95.0
+
+# Monitoring dan metrics
+prometheus-client>=0.14.0
+psutil>=5.9.0
+
+# Development dependencies
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+black>=22.0.0
+flake8>=4.0.0
+
+# ICP specific (mock - real implementation needs dfx)
+# dfx
+# vessel
+
+# Installation notes:
+# 1. pip install -r enhanced_requirements.txt
+# 2. For ICP development:
+#    - Install dfx: sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
+#    - Install vessel: wget https://github.com/dfinity/vessel/releases/latest/download/vessel-linux64
+# 3. For production: Setup monitoring stack (Prometheus, Grafana)
+
+# Production scaling dependencies (advanced)
+# gunicorn>=20.0.0
+# nginx
+# docker
+# kubernetes

@@ -1,0 +1,65 @@
+# enhanced_requirements.txt
+# Dependencies untuk Enhanced Aegis Protocol System
+
+# Core Python dependencies (sudah ada)
+asyncio
+dataclasses  
+typing
+enum34
+datetime
+hashlib
+logging
+json
+time
+random
+
+# New dependencies untuk enhanced features
+aiohttp>=3.8.0              # Untuk DON real-time API calls
+requests>=2.28.0            # Backup HTTP client
+websockets>=10.0            # Real-time communications
+
+# Data processing (optional tapi recommended)
+numpy>=1.21.0               # Numerical computations untuk AI
+pandas>=1.3.0               # Data analysis untuk performance metrics
+
+# Blockchain integration
+web3>=6.0.0                 # Ethereum integration (backup)
+cryptography>=3.4.0        # Crypto operations untuk ICP
+
+# Database dan caching
+sqlalchemy>=1.4.0           # Database operations (optional)
+redis>=4.0.0                # Caching dan pub/sub (optional)
+
+# Task management
+celery>=5.2.0               # Background tasks (optional)
+
+# API dan networking
+uvicorn>=0.18.0             # ASGI server (jika perlu web interface)
+fastapi>=0.95.0             # REST API framework (optional)
+
+# Monitoring dan metrics
+prometheus-client>=0.14.0   # Metrics collection (optional)
+psutil>=5.9.0               # System monitoring
+
+# Development dependencies
+pytest>=7.0.0               # Testing framework
+pytest-asyncio>=0.21.0      # Async testing support
+black>=22.0.0               # Code formatting
+flake8>=4.0.0               # Code linting
+
+# ICP specific (mock - real implementation needs dfx)
+# dfx                       # Internet Computer SDK (install separately)
+# vessel                    # Motoko package manager (install separately)
+
+# Installation notes:
+# 1. pip install -r enhanced_requirements.txt
+# 2. For ICP development: 
+#    - Install dfx: sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
+#    - Install vessel: wget https://github.com/dfinity/vessel/releases/latest/download/vessel-linux64 
+# 3. For production: Setup monitoring stack (Prometheus, Grafana)
+
+# Production scaling dependencies (advanced)
+# gunicorn>=20.0.0          # WSGI server
+# nginx                     # Reverse proxy (system package)
+# docker                    # Containerization
+# kubernetes                # Orchestration
