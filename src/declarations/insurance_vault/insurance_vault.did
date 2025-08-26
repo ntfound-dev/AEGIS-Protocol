@@ -21,11 +21,32 @@ type InsuranceVault =
    release_initial_funding: (dao_canister_id: principal, event_data:
     ValidatedEventData) -> (Result);
  };
-/// ------------------------------------------------------------
+/// =====================================================================
 /// Actor: InsuranceVault
-/// Description:
-///   - Manages liquidity to back DAOs created by EventFactory.
-///   - Handles authorized funders, vault funding, and event-based payouts.
-///   - Liquidity is released to EventDAO based on event severity.
-/// ------------------------------------------------------------
+/// =====================================================================
+/// Parametric insurance system for automated disaster response funding
+/// 
+/// Initialization Parameters:
+///   - init_factory_id: EventFactory principal authorized to trigger releases
+///   - init_funder_id: Primary funder with initial funding authorization
+///   - init_admin_id: Administrative principal for funder management
+/// 
+/// Design Philosophy:
+///   The Insurance Vault operates on parametric insurance principles,
+///   where payouts are automatically triggered by objective disaster
+///   parameters rather than traditional claims processing. This enables
+///   rapid response without bureaucratic delays.
+/// 
+/// Liquidity Management:
+///   - Accepts funds from multiple authorized sources
+///   - Maintains reserve levels for sustained operations
+///   - Implements automatic release based on severity thresholds
+///   - Provides transparency through query functions
+/// 
+/// Security Model:
+///   - Immutable factory authorization prevents unauthorized access
+///   - Admin-controlled funder list for capital source management
+///   - Balance validation prevents over-disbursement
+///   - Principal-based access control for all operations
+/// =====================================================================
 service : (init_factory_id: principal, init_funder_id: principal, init_admin_id: principal) -> InsuranceVault

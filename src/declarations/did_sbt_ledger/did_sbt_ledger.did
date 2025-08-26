@@ -69,4 +69,36 @@ type DIDProfile =
    owner: principal;
    registration_date: Time;
  };
+/// =====================================================================
+/// Actor: DID_SBT_Ledger
+/// =====================================================================
+/// Comprehensive identity and reputation management system
+/// 
+/// Initialization:
+///   - init_admin: Administrative principal for system management
+/// 
+/// Design Philosophy:
+///   The DID SBT Ledger implements Web3 identity principles where
+///   users maintain sovereign control over their identity while
+///   building verifiable reputation through Soulbound Tokens that
+///   cannot be transferred or sold.
+/// 
+/// Identity Management:
+///   - Self-registration of DID profiles
+///   - Cryptographic verification via IC Principals
+///   - Updatable profile information for flexibility
+///   - Privacy-preserving data storage
+/// 
+/// Reputation System:
+///   - SBTs represent immutable achievement records
+///   - Event-specific badges for disaster response participation
+///   - Cumulative reputation building over time
+///   - Integration with governance systems for weighted voting
+/// 
+/// Access Control:
+///   - Admin manages minter authorization
+///   - Authorized minters can issue SBTs
+///   - Self-service DID registration
+///   - Query functions for public data access
+/// =====================================================================
 service : (init_admin: principal) -> DID_SBT_Ledger
