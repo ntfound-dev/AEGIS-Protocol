@@ -79,3 +79,4 @@ Follow the steps below to set up the Aegis Protocol project on your local machin
 
 🤝 **Contributing**  
 We welcome contributions! If you find any bugs or have suggestions for improvements, please open an issue or submit a pull request in the project repository.
+
