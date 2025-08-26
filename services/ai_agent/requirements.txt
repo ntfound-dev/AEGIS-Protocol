@@ -1,8 +1,72 @@
+# =====================================================================
+# AEGIS Protocol - AI Agent Dependencies
+# =====================================================================
+# Purpose: Python package requirements for disaster response AI agents
+# 
+# Dependency Categories:
+#   - Agent Framework: Fetch.ai uAgents for decentralized AI
+#   - Blockchain Integration: Internet Computer protocol libraries
+#   - HTTP/API: External data source communication
+#   - Configuration: Environment and file management
+#   - AI/ML: OpenAI integration for advanced processing
+#   - Web Services: FastAPI and ASGI server for health endpoints
+# 
+# Version Policy:
+#   - Pinned versions for critical blockchain dependencies (ic-py)
+#   - Latest stable for framework and utility packages
+#   - Security-conscious choices for production deployment
+# =====================================================================
+
+# =====================================================================
+# CORE AGENT FRAMEWORK
+# =====================================================================
+# Fetch.ai uAgents framework for decentralized AI agent development
+# Provides: Agent lifecycle, messaging, protocols, economic model
 uagents
+
+# =====================================================================
+# CONFIGURATION AND ENVIRONMENT
+# =====================================================================
+# Environment variable management for secure configuration
+# Provides: .env file loading, environment variable access
 python-dotenv
+
+# =====================================================================
+# HTTP CLIENT AND API COMMUNICATION
+# =====================================================================
+# Modern async HTTP client for external API communication
+# Provides: USGS/BMKG API access, HTTP/2 support, connection pooling
 httpx
+
+# =====================================================================
+# BLOCKCHAIN INTEGRATION
+# =====================================================================
+# Internet Computer Protocol library for canister communication
+# Provides: IC agent, candid encoding, identity management, transactions
+# Version pinned for stability and compatibility
 ic-py==1.0.1
+
+# =====================================================================
+# ASYNCHRONOUS FILE OPERATIONS
+# =====================================================================
+# Async file I/O for non-blocking configuration and key file access
+# Provides: Async file reading, identity.pem loading, canister config
 aiofiles
+
+# =====================================================================
+# AI AND MACHINE LEARNING
+# =====================================================================
+# OpenAI API client for advanced natural language processing
+# Provides: GPT integration, text analysis, intelligent responses
 openai
+
+# =====================================================================
+# WEB SERVICES AND HEALTH MONITORING
+# =====================================================================
+# ASGI server with production-grade features
+# Provides: Health endpoints, metrics, graceful shutdown
 uvicorn[standard]
+
+# Modern web framework for API endpoints and health checks
+# Provides: HTTP routing, request/response handling, documentation
 fastapi

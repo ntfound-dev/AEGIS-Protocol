@@ -1,39 +1,107 @@
 {
+  // =====================================================
+  // DFX Configuration File for AEGIS Protocol
+  // =====================================================
+  // This file defines the Internet Computer (IC) canister structure
+  // for the AEGIS decentralized disaster response framework.
+  // 
+  // Architecture Overview:
+  // - Event Factory: Central factory for creating disaster-specific DAOs
+  // - Event DAO: Individual disaster management and voting canister
+  // - Insurance Vault: Manages parametric insurance and funding
+  // - DID SBT Ledger: Handles decentralized identity and reputation
+  // - Frontend: Static web assets served from IC canister
+  // =====================================================
+  
   "version": 1,
+  // =====================================================
+  // CANISTER DEFINITIONS
+  // =====================================================
+  // Each canister represents a core component of the AEGIS system
   "canisters": {
+    // Event Factory Canister
+    // Purpose: Central factory for creating disaster-specific DAOs
+    // Responsibilities:
+    //   - Receives validated disaster events from AI agents
+    //   - Creates new EventDAO instances for each disaster
+    //   - Coordinates with InsuranceVault for initial funding
+    //   - Maintains registry of all active disaster events
     "event_factory": {
       "type": "motoko",
       "main": "src/event_factory/main.mo",
-      "dependencies": ["event_dao", "insurance_vault"]
+      "dependencies": ["event_dao", "insurance_vault"]  // Requires DAO and vault for coordination
     },
+    // Event DAO Canister
+    // Purpose: Disaster-specific governance and fund management
+    // Responsibilities:
+    //   - Manages proposals for disaster relief activities
+    //   - Handles voting mechanisms for community decisions
+    //   - Tracks donations and donor participation
+    //   - Executes approved funding disbursements
+    //   - Integrates with SBT system for reputation tracking
     "event_dao": {
       "type": "motoko",
       "main": "src/event_dao/main.mo"
     },
+    // DID SBT Ledger Canister
+    // Purpose: Decentralized Identity and Soulbound Token management
+    // Responsibilities:
+    //   - Issues and manages Soulbound Tokens (SBTs) for reputation
+    //   - Tracks user participation in disaster response activities
+    //   - Provides decentralized identity verification
+    //   - Maintains immutable record of community contributions
     "did_sbt_ledger": {
       "type": "motoko",
       "main": "src/did_sbt_ledger/main.mo"
     },
+    // Insurance Vault Canister
+    // Purpose: Parametric insurance and treasury management
+    // Responsibilities:
+    //   - Stores and manages disaster response funding
+    //   - Implements parametric insurance triggering logic
+    //   - Releases initial funding for new disaster events
+    //   - Manages authorization for funding operations
+    //   - Tracks fund utilization and disbursements
     "insurance_vault": {
       "type": "motoko",
       "main": "src/insurance_vault/main.mo"
     },
+    // Frontend Assets Canister
+    // Purpose: Serves the web interface directly from IC blockchain
+    // Benefits:
+    //   - Fully decentralized hosting (no traditional web servers)
+    //   - Censorship resistant frontend
+    //   - Integration with IC identity and wallet systems
+    //   - Gasless interactions for end users
     "frontend": {
       "type": "assets",
       "source": [
-        "frontend/"
+        "frontend/"  // All files in frontend/ directory are served
       ]
     }
   },
+  
+  // =====================================================
+  // BUILD CONFIGURATION
+  // =====================================================
   "defaults": {
     "build": {
+      // Use MOPS (Motoko package manager) for dependency resolution
+      // This ensures consistent library versions across all canisters
       "packtool": "mops sources"
     }
   },
+  // =====================================================
+  // NETWORK CONFIGURATION
+  // =====================================================
   "networks": {
+    // Local development network configuration
+    // Used for testing and development before mainnet deployment
     "local": {
-      "bind": "127.0.0.1:4943",
-      "type": "ephemeral"
+      "bind": "127.0.0.1:4943",  // Local replica listens on this address
+      "type": "ephemeral"         // Data doesn't persist between dfx restarts
     }
+    // Production networks (ic, playground) can be added here
+    // when ready for mainnet deployment
   }
 }

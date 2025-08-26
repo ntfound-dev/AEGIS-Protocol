@@ -1,33 +1,71 @@
+// =====================================================
+// IC Assets Configuration for AEGIS Protocol Frontend
+// =====================================================
+// This file configures how static assets are served from the
+// Internet Computer (IC) frontend canister. It defines security
+// policies, caching strategies, and HTTP headers for different
+// file types to ensure secure and efficient asset delivery.
+// 
+// Format: JSON5 (allows comments and trailing commas)
+// Docs: https://internetcomputer.org/docs/current/developer-docs/web-apps/
+// =====================================================
+
 [
   {
+    // Default security policy for all files
+    // Applies to any file not matched by more specific rules below
     "match": "**/*",
-    "security_policy": "standard"
+    "security_policy": "standard"  // Uses IC's standard security baseline
   },
   {
+    // JavaScript files security configuration
+    // Special handling required for AEGIS frontend functionality
     "match": "*.js",
     "security_policy": "standard",
     "headers": {
+      // Content Security Policy (CSP) - defines allowed resource sources
+      // Customized for AEGIS Protocol requirements:
+      // - 'self': Allow resources from same origin (IC canister)
+      // - 'unsafe-eval': Required for some IC agent libraries
+      // - 'unsafe-inline': Required for dynamic styling
+      // - IC endpoints: Allow connections to local replica and IC identity
+      // - Agent endpoints: Allow connections to AI agent services
       "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4943 http://localhost:8001 http://localhost:8002 http://localhost:8003 https://identity.ic0.app; img-src 'self' data:; font-src 'self';"
     }
   },
   {
+    // HTML files security configuration
+    // Additional security headers for main application pages
     "match": "*.html",
     "security_policy": "standard",
     "headers": {
+      // Prevent embedding in frames to avoid clickjacking attacks
       "X-Frame-Options": "DENY",
+      // Prevent MIME type sniffing to avoid content type confusion attacks
       "X-Content-Type-Options": "nosniff",
+      // Control referrer information sent with requests for privacy
       "Referrer-Policy": "strict-origin-when-cross-origin"
     }
   },
   {
+    // Static assets caching configuration
+    // Aggressive caching for immutable assets (images, fonts, etc.)
+    // These files rarely change and can be cached for long periods
     "match": "*.{css,js,png,jpg,jpeg,gif,svg,ico,woff,woff2}",
     "headers": {
+      // Cache for 1 year (31536000 seconds) with immutable flag
+      // Browser won't even check for updates until cache expires
       "Cache-Control": "public, max-age=31536000, immutable"
     }
   },
   {
+    // HTML files caching configuration
+    // Prevent caching for HTML files to ensure users get latest app version
+    // Critical for AEGIS Protocol where disaster response information must be current
     "match": "*.html",
     "headers": {
+      // Force browsers to always fetch fresh HTML from IC canister
+      // Ensures users see latest disaster events and system updates
       "Cache-Control": "no-cache, no-store, must-revalidate"
     }
   }

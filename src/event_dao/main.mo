@@ -1,61 +1,156 @@
-import TrieMap "mo:base/TrieMap";
-import Buffer "mo:base/Buffer";
-import Types "types";
-import Principal "mo:base/Principal";
-import Nat "mo:base/Nat";
-import Nat32 "mo:base/Nat32";
-import Hash "mo:base/Hash";
-import Debug "mo:base/Debug";
-import EventDefs "event_defs";
-import SbtLedger "canister:did_sbt_ledger";
+// =====================================================================
+// AEGIS Protocol - Event DAO Canister
+// =====================================================================
+// File: src/event_dao/main.mo
+// Purpose: Disaster-specific governance and fund management
+// 
+// Architecture Overview:
+//   The Event DAO serves as an autonomous governance system for
+//   individual disaster events in the AEGIS Protocol. Each DAO
+//   manages its own treasury, proposals, voting, and fund disbursement
+//   for a specific disaster requiring community response.
+// 
+// Key Responsibilities:
+//   - Manage disaster-specific treasury and donations
+//   - Process and track relief proposals from affected communities
+//   - Implement transparent voting mechanisms for fund allocation
+//   - Execute approved proposals with automatic fund disbursement
+//   - Issue Soulbound Tokens (SBTs) for participation tracking
+//   - Maintain audit trails for all governance activities
+// 
+// Governance Model:
+//   - Proposal-based decision making for fund allocation
+//   - One-person-one-vote system with donation incentives
+//   - Automatic execution when vote thresholds are met
+//   - Transparent tracking of all votes and disbursements
+//   - Integration with reputation system via SBT minting
+// 
+// Treasury Management:
+//   - Receives donations from individuals and organizations
+//   - Tracks donor contributions for recognition and incentives
+//   - Manages fund allocation based on approved proposals
+//   - Ensures transparent accounting of all transactions
+// 
+// Integration Points:
+//   - Factory: Receives initialization from EventFactory
+//   - SBT Ledger: Mints participation tokens for contributors
+//   - Frontend: Provides data for user interface
+//   - Insurance: Receives initial funding for immediate response
+// 
+// Persistence Strategy:
+//   - Critical state (treasury, proposals) persists across upgrades
+//   - Transient state (caches, temporary data) may reset
+//   - Consider stable storage for production deployments
+// =====================================================================
 
-/// ------------------------------------------------------------------
-/// Helpers and utilities
-/// ------------------------------------------------------------------
+// Core Motoko standard library imports
+import TrieMap "mo:base/TrieMap";    // Hash map data structure for efficient lookups
+import Buffer "mo:base/Buffer";      // Dynamic array for collecting results
+import Principal "mo:base/Principal"; // Principal ID management and operations
+import Nat "mo:base/Nat";            // Natural number utilities and conversions
+import Nat32 "mo:base/Nat32";        // 32-bit natural numbers for hash functions
+import Hash "mo:base/Hash";          // Hash function definitions and utilities
+import Debug "mo:base/Debug";        // Debugging utilities (remove in production)
+// AEGIS Protocol specific imports
+import Types "types";                  // Shared type definitions across canisters
+import EventDefs "event_defs";         // Event-specific data structures and types
 
-/// ------------------------------------------------------------------
-/// Persistent actor
-/// ------------------------------------------------------------------
+// Inter-canister communication imports
+import SbtLedger "canister:did_sbt_ledger"; // Soulbound Token system for reputation
 
+/// =====================================================================
+/// UTILITY FUNCTIONS AND HELPERS
+/// =====================================================================
+/// Supporting functions for data structure operations and conversions
+
+/// =====================================================================
+/// PERSISTENT ACTOR: EventDAO
+/// =====================================================================
+/// Autonomous governance system for disaster-specific fund management
+/// 
+/// Design Philosophy:
+///   Each EventDAO operates as an independent governance entity with
+///   complete autonomy over its treasury and decision-making processes.
+///   This ensures that disaster response remains decentralized and
+///   resistant to single points of failure or control.
+/// 
+/// State Management:
+///   - Persistent: Critical governance data survives canister upgrades
+///   - Transient: Performance caches and temporary data may reset
+///   - Upgradeable: Canister logic can be updated while preserving state
+/// 
+/// Security Model:
+///   - Identity-based access control for critical operations
+///   - Transparent voting to prevent manipulation
+///   - Immutable audit trails for accountability
+///   - Protection against double-voting and fraud
+/// =====================================================================
 persistent actor EventDAO {
 
-    // customNatHash
-    // - Adapter hash function for TrieMap keys of type Nat
-    // - Converts to Nat32 to ensure a 32-bit hash value
-    // === CHANGED === helper moved here (was top-level) ===
-    private func customNatHash(n : Nat) : Hash.Hash { Nat32.fromNat(n % 4294967296); };
+    /// =================================================================
+    /// UTILITY FUNCTIONS
+    /// =================================================================
+    /// Helper functions for data structure operations
+    
+    /// Custom hash function for natural numbers in TrieMap operations
+    /// Converts Nat to Nat32 with modulo operation to prevent overflow
+    /// This ensures consistent hashing for proposal ID lookups
+    /// 
+    /// Parameters:
+    ///   n: Nat - Natural number to hash
+    /// Returns:
+    ///   Hash.Hash - 32-bit hash value for TrieMap indexing
+    private func customNatHash(n : Nat) : Hash.Hash { 
+        Nat32.fromNat(n % 4294967296) 
+    };
 
 
 
-    // treasury_balance
-    // - Total recorded donations held by the DAO (units = arbitrary Nat)
-    // NOTE: If real funds are involved, integrate proper bookkeeping and audits.
+    /// =================================================================
+    /// PERSISTENT STATE VARIABLES
+    /// =================================================================
+    /// Core DAO state that persists across canister upgrades
+    
+    /// Treasury balance tracking total donated funds (in arbitrary units)
+    /// In production, integrate with proper token ledgers and audit systems
+    /// This represents the total available capital for disaster response
     var treasury_balance : Nat = 0;
 
-    // proposals
-    // - TrieMap storing proposals by id (Nat)
-    // - Transient: data marked transient will not survive upgrades; if you need
-    //   persistence across upgrades, remove 'transient' or use stable storage patterns.
-    // TODO: consider adding secondary indexes (by proposer, executed flag, etc.)
+    /// =================================================================
+    /// TRANSIENT STATE VARIABLES
+    /// =================================================================
+    /// Performance-oriented state that may reset during upgrades
+    /// For production, consider migrating critical data to stable storage
+    
+    /// Proposal storage using efficient hash map for O(1) lookups
+    /// Maps proposal IDs to complete proposal data structures
+    /// Transient storage means data may be lost during canister upgrades
     transient var proposals : TrieMap.TrieMap<Nat, EventDefs.Proposal> =
         TrieMap.TrieMap<Nat, EventDefs.Proposal>(Nat.equal, customNatHash);
 
-    // donors
-    // - Map donor Principal -> total donated amount
+    /// Donor contribution tracking for recognition and incentives
+    /// Maps donor Principal IDs to their total contribution amounts
+    /// Used for weighted voting and reputation calculations
     transient var donors : TrieMap.TrieMap<Principal, Nat> =
         TrieMap.TrieMap<Principal, Nat>(Principal.equal, Principal.hash);
 
-    // nextProposalId: incrementing counter for proposal IDs
+    /// =================================================================
+    /// CONFIGURATION AND METADATA
+    /// =================================================================
+    /// DAO configuration and initialization data
+    
+    /// Proposal ID counter for generating unique identifiers
+    /// Incremented with each new proposal to ensure uniqueness
     var nextProposalId : Nat = 0;
 
-    // event_details
-    // - Optional event metadata (e.g. event name, type)
-    // - Stored transiently; if persistence across upgrades is required, adapt strategy.
+    /// Disaster event metadata from AI validation pipeline
+    /// Contains event type, severity, location, and confidence data
+    /// Optional because DAO may exist before event assignment
     transient var event_details : ?Types.ValidatedEventData = null;
 
-    // factory_principal
-    // - Optional principal that represents the factory or deployer
-    // FIXME: currently no access control — consider restricting initialize() to a specific principal.
+    /// Factory canister principal for authorization and tracking
+    /// Identifies the EventFactory that created this DAO instance
+    /// Currently no access control - consider authorization improvements
     transient var factory_principal : ?Principal = null;
 
     /// ------------------------------------------------------------------

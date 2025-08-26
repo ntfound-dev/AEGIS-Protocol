@@ -1,10 +1,45 @@
+# =====================================================
+# MOPS Configuration for AEGIS Protocol
+# =====================================================
+# MOPS (Motoko Package Manager) configuration file
+# Defines dependencies, toolchain versions, and package requirements
+# for all Motoko canisters in the AEGIS system.
+# 
+# Learn more: https://mops.one/
+# =====================================================
+
+# =====================================================
+# PROJECT DEPENDENCIES
+# =====================================================
+# Core Motoko libraries required by AEGIS canisters
 [dependencies]
+# Base Motoko library - provides fundamental data structures and utilities
+# Used across all canisters for basic operations (arrays, maps, results, etc.)
 base = "0.14.1"
+# Memory Region library - provides efficient memory management utilities
+# Used for optimizing canister memory usage and state management
 memory-region = "1.0.0"
+# Motoko Base from GitHub - development version with latest features
+# Provides access to cutting-edge Motoko standard library functions
+# Used when stable releases don't have required functionality
 motoko-base = "https://github.com/dfinity/motoko-base#master@df83fbfb4b196910d8e1f789a7e2ca91dd734378"
 
+# =====================================================
+# TOOLCHAIN CONFIGURATION
+# =====================================================
+# Specifies the Motoko compiler (moc) version to use
+# Ensures consistent compilation across development environments
 [toolchain]
+# Motoko compiler version - must match requirements for dependency compatibility
+# Version 0.15.1 provides stability and compatibility with base libraries
+# Minimum required Motoko compiler version
+# Ensures all developers use compatible toolchain versions
 moc = "0.15.1"
 
+# =====================================================
+# VERSION REQUIREMENTS
+# =====================================================
+# Enforces minimum compiler versions for project compatibility
+# Prevents issues from using outdated compiler versions
 [requirements]
 moc = "0.15.1"
