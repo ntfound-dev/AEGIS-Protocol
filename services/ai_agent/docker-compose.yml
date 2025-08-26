@@ -1,32 +1,83 @@
+# =====================================================================
+# AEGIS Protocol - AI Agent Orchestration
+# =====================================================================
+# File: services/ai_agent/docker-compose.yml
+# Purpose: Multi-agent system deployment and coordination
+# 
+# Architecture Overview:
+#   This Docker Compose configuration deploys three specialized AI agents
+#   that work together to provide automated disaster response capabilities.
+#   Each agent has specific responsibilities in the disaster detection and
+#   response pipeline.
+# 
+# Agent System:
+#   - Oracle Agent: Monitors external disaster data sources
+#   - Validator Agent: Validates and reaches consensus on events
+#   - Action Agent: Bridges validated events to blockchain
+# 
+# Security Features:
+#   - Resource limits to prevent resource exhaustion
+#   - Read-only filesystems with specific writable areas
+#   - Non-privileged containers for enhanced security
+#   - Secure volume mounts for configuration access
+# 
+# Operational Features:
+#   - Automatic restart policies for high availability
+#   - Centralized logging with rotation for monitoring
+#   - Health checks and dependency management
+#   - Environment-based configuration
+# =====================================================================
+
 services:
+  # ===================================================================
+  # VALIDATOR AGENT SERVICE
+  # ===================================================================
+  # Purpose: Event validation and consensus processing
+  # Role: Middle layer between Oracle and Action agents
+  # Responsibilities: Validate earthquake data, calculate confidence scores
+  
   validator-agent:
     build:
-      context: .   # <-- jangan pakai ./services/ai_agent
-      dockerfile: Dockerfile
+      context: .              # Build context from current directory
+      dockerfile: Dockerfile   # Use the enhanced AI agent Dockerfile
+      
+    # Override default command to run specific agent implementation
     command: python /app/agents/chatbotrepair/asi_one.py
+    # Environment configuration from project root .env file
     env_file:
-      - ../../.env
+      - ../../.env  # Load environment variables from project root
+      
+    # Service-specific environment variables
     environment:
-      - VALIDATOR_AGENT_SEED=${VALIDATOR_AGENT_SEED}
-      - ACTION_AGENT_ADDRESS=${ACTION_AGENT_ADDRESS}
-      - CANISTER_IDS_PATH=/app/dfx-local/canister_ids.json
-      - IDENTITY_PEM_PATH=/app/identity.pem
+      - VALIDATOR_AGENT_SEED=${VALIDATOR_AGENT_SEED}      # Cryptographic identity seed
+      - ACTION_AGENT_ADDRESS=${ACTION_AGENT_ADDRESS}      # Downstream agent target
+      - CANISTER_IDS_PATH=/app/dfx-local/canister_ids.json # Blockchain configuration
+      - IDENTITY_PEM_PATH=/app/identity.pem               # Authentication key path
+    # Network port exposure for inter-agent communication
     ports:
-      - "8004:8004"
+      - "8004:8004"  # Validator agent communication port
+      
+    # Restart policy for high availability
     restart: ${AGENT_RESTART_POLICY:-unless-stopped}
+    
+    # Resource limits for stability and security
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 256M
+          cpus: '0.5'      # Maximum CPU allocation (50% of one core)
+          memory: 256M     # Maximum RAM allocation
         reservations:
-          cpus: '0.1'
-          memory: 128M
+          cpus: '0.1'      # Guaranteed minimum CPU allocation
+          memory: 128M     # Guaranteed minimum RAM allocation
+          
+    # Security hardening configuration
     security_opt:
-      - no-new-privileges:true
+      - no-new-privileges:true  # Prevent privilege escalation
+      
+    # Read-only filesystem with tmpfs for temporary data
     read_only: true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=100m
+      - /tmp:rw,noexec,nosuid,size=100m  # Temporary filesystem for runtime data
     volumes:
       - ./persistent/dfx-local/canister_ids.json:/app/dfx-local/canister_ids.json:ro
       - ./persistent/identity.pem:/app/identity.pem:ro
@@ -36,51 +87,89 @@ services:
         max-size: "50m"
         max-file: "5"
 
+  # ===================================================================
+  # ORACLE AGENT SERVICE
+  # ===================================================================
+  # Purpose: External disaster data monitoring and collection
+  # Role: Primary data source for the disaster response system
+  # Responsibilities: Monitor USGS/BMKG APIs, forward events to validator
+  
   oracle-agent:
     build:
       context: .
       dockerfile: Dockerfile
+      
+    # Run Oracle Agent for data collection
     command: python /app/agents/oracle_agent.py
+    # Environment configuration
     env_file:
       - ../../.env
+      
     environment:
-      - ORACLE_AGENT_SEED=${ORACLE_AGENT_SEED}
-      - VALIDATOR_AGENT_ADDRESS=${VALIDATOR_AGENT_ADDRESS}
+      - ORACLE_AGENT_SEED=${ORACLE_AGENT_SEED}          # Cryptographic identity
+      - VALIDATOR_AGENT_ADDRESS=${VALIDATOR_AGENT_ADDRESS} # Data forwarding target
       - CANISTER_IDS_PATH=/app/dfx-local/canister_ids.json
       - IDENTITY_PEM_PATH=/app/identity.pem
+    # Network configuration
     ports:
-      - "8001:8001"
+      - "8001:8001"  # Oracle agent communication port
+      
+    # High availability configuration
     restart: ${AGENT_RESTART_POLICY:-unless-stopped}
+    
+    # Persistent storage and authentication mounts
     volumes:
       - ./persistent/dfx-local/canister_ids.json:/app/dfx-local/canister_ids.json:ro
       - ./persistent/identity.pem:/app/identity.pem:ro
+      
+    # Logging configuration
     logging:
       driver: "json-file"
       options:
         max-size: "50m"
         max-file: "5"
 
+  # ===================================================================
+  # ACTION AGENT SERVICE
+  # ===================================================================
+  # Purpose: Blockchain bridge for validated disaster events
+  # Role: Final layer connecting AI validation to Internet Computer
+  # Responsibilities: Execute canister calls, create disaster DAOs
+  
   action-agent:
     build:
       context: .
       dockerfile: Dockerfile
+      
+    # Run Action Agent for blockchain integration
     command: python /app/agents/action_agent.py
+    # Environment configuration
     env_file:
       - ../../.env
+      
     environment:
-      - ACTION_AGENT_SEED=${ACTION_AGENT_SEED}
+      - ACTION_AGENT_SEED=${ACTION_AGENT_SEED}          # Cryptographic identity
       - CANISTER_IDS_PATH=/app/dfx-local/canister_ids.json
       - IDENTITY_PEM_PATH=/app/identity.pem
-      - ICP_URL=http://host.docker.internal:4943
+      - ICP_URL=http://host.docker.internal:4943        # IC replica connection
+    # Network configuration
     ports:
-      - "8003:8003"
+      - "8003:8003"  # Action agent communication port
+      
+    # Service dependencies - Action Agent requires upstream agents
     depends_on:
-      - validator-agent
-      - oracle-agent
+      - validator-agent  # Receives validated events from validator
+      - oracle-agent     # Ensures full pipeline is operational
+      
+    # High availability configuration
     restart: ${AGENT_RESTART_POLICY:-unless-stopped}
+    
+    # Configuration and authentication mounts
     volumes:
       - ./persistent/dfx-local/canister_ids.json:/app/dfx-local/canister_ids.json:ro
       - ./persistent/identity.pem:/app/identity.pem:ro
+      
+    # Centralized logging
     logging:
       driver: "json-file"
       options:

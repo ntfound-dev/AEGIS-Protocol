@@ -1,51 +1,148 @@
-// ======================================================
-// AEGIS PROTOCOL - main.js
-// Simulasi Lengkap Semua Peran
-// ======================================================
+// =====================================================================
+// AEGIS Protocol - Frontend User Interface
+// =====================================================================
+// File: frontend/main.js
+// Purpose: Interactive web interface for disaster response simulation
+// 
+// Architecture Overview:
+//   The AEGIS Protocol frontend provides a comprehensive user interface
+//   for interacting with the decentralized disaster response system.
+//   It simulates multiple user roles and demonstrates the complete
+//   disaster response workflow from event detection to fund disbursement.
+// 
+// Key Features:
+//   - Multi-role simulation (Admin, Funder, Organizer, Communities)
+//   - Real-time chat interface with AI assistant
+//   - Interactive demonstration of all system components
+//   - Visual feedback for blockchain operations
+//   - Complete disaster response lifecycle simulation
+// 
+// User Roles:
+//   - Admin: System management and proposal approval
+//   - Funder: Capital provision and insurance vault management
+//   - Organizer: Disaster event declaration and coordination
+//   - Community (Affected): Proposal submission and aid requests
+//   - Community (Supporting): Donations and voting participation
+// 
+// Simulation Features:
+//   - Realistic disaster response scenarios
+//   - Step-by-step workflow demonstration
+//   - Interactive command processing (natural language + DFX)
+//   - Real-time state updates and progress tracking
+//   - Educational feedback for each operation
+// 
+// Technical Implementation:
+//   - Vanilla JavaScript for broad compatibility
+//   - Event-driven architecture for responsive UI
+//   - Local state management for simulation data
+//   - Integration with IC agent libraries for blockchain connectivity
+// 
+// Integration Points:
+//   - IC Canisters: Direct communication with deployed contracts
+//   - AI Agents: Monitoring and event processing
+//   - Identity System: User authentication and role management
+// =====================================================================
 
+// Wait for DOM to be fully loaded before initializing application
+// This ensures all HTML elements are available for manipulation
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 1. UI ELEMENTS
-    const loginBtn = document.getElementById('loginBtn');
-    const loginStatusEl = document.getElementById('loginStatus');
-    const chatWindow = document.getElementById('chatWindow');
-    const chatInput = document.getElementById('chatInput');
-    const chatSendBtn = document.getElementById('chatSendBtn');
+    // ===================================================================
+    // DOM ELEMENT REFERENCES
+    // ===================================================================
+    // Cache DOM elements for efficient access throughout the application
+    
+    // Authentication and user interface elements
+    const loginBtn = document.getElementById('loginBtn');           // Role selection button
+    const loginStatusEl = document.getElementById('loginStatus');   // Current user role display
+    
+    // Chat interface elements for AI assistant interaction
+    const chatWindow = document.getElementById('chatWindow');       // Message display area
+    const chatInput = document.getElementById('chatInput');         // User input field
+    const chatSendBtn = document.getElementById('chatSendBtn');     // Message send button
 
-    // 2. SIMULASI APLIKASI STATE
+    // ===================================================================
+    // APPLICATION STATE MANAGEMENT
+    // ===================================================================
+    // Global state variables for simulation and role-playing
+    
+    // Current user role for role-based command processing
     let currentRole = null;
-    let funderBalance = 0;
-    let funderToken = 0;
-    let activeDaoId = null;
-    let proposalList = [];
-    let isProfileRegistered = false;
-    let proposalApproved = false;
+    
+    // Financial state tracking for funder simulation
+    let funderBalance = 0;      // Available capital for insurance vault
+    let funderToken = 0;        // AEGIS tokens earned as funder rewards
+    
+    // Active DAO tracking for disaster event management
+    let activeDaoId = null;     // Current disaster DAO identifier
+    
+    // Proposal system state for governance simulation
+    let proposalList = [];      // Array of disaster relief proposals
+    
+    // User registration and participation tracking
+    let isProfileRegistered = false;  // Community member registration status
+    let proposalApproved = false;     // Admin approval state for proposals
 
+    // ===================================================================
+    // ROLE DEFINITIONS AND PERMISSIONS
+    // ===================================================================
+    // Define available user roles and their capabilities in the system
+    
     const ROLES = {
-        ADMIN: 'Admin',
-        FUNDER: 'Funder',
-        ORGANIZER: 'Organizer',
-        KOMUNITAS_PEDULI: 'Komunitas Peduli',
-        KOMUNITAS_KORBAN: 'Komunitas Korban'
+        ADMIN: 'Admin',                    // System administrator with full access
+        FUNDER: 'Funder',                  // Capital provider for insurance vault
+        ORGANIZER: 'Organizer',            // Disaster event coordinator
+        KOMUNITAS_PEDULI: 'Komunitas Peduli',   // Supporting community (donors/voters)
+        KOMUNITAS_KORBAN: 'Komunitas Korban'    // Affected community (aid recipients)
     };
+    
+    // Role Capabilities:
+    // - ADMIN: Deploy canisters, approve proposals, system management
+    // - FUNDER: Provide capital, manage insurance vault, earn rewards
+    // - ORGANIZER: Declare disaster events, coordinate response efforts
+    // - KOMUNITAS_PEDULI: Register identity, donate funds, vote on proposals
+    // - KOMUNITAS_KORBAN: Submit aid proposals, request fund disbursement
 
-    // 3. MESSAGE DISPLAY FUNCTION
+    // ===================================================================
+    // MESSAGE DISPLAY SYSTEM
+    // ===================================================================
+    // Comprehensive chat interface for user interaction and feedback
+    
+    /**
+     * Display message in chat interface with rich formatting and context
+     * 
+     * Features:
+     *   - Role-based message styling (user vs AI assistant)
+     *   - Timestamp tracking for conversation history
+     *   - Icon differentiation for message sources
+     *   - Automatic scrolling for latest messages
+     *   - HTML content support for rich formatting
+     * 
+     * @param {string} content - Message content (supports HTML)
+     * @param {string} sender - Message sender identifier
+     * @param {boolean} isImage - Flag for image content (optional)
+     */
     function displayMessage(content, sender, isImage = false) {
+        // Create message container with appropriate styling
         const messageContainer = document.createElement('div');
         messageContainer.classList.add('message', sender.includes('Anda') ? 'user-message' : 'agent-message');
         
+        // Create and configure message icon
         const messageIcon = document.createElement('div');
         messageIcon.classList.add('message-icon');
         
+        // Set icon based on sender type
         if (sender === 'Aegis AI Assistant') {
-            messageIcon.innerHTML = '<i class="fas fa-robot"></i>';
+            messageIcon.innerHTML = '<i class="fas fa-robot"></i>';  // AI assistant icon
         } else {
-            messageIcon.innerHTML = '<i class="fas fa-user-circle"></i>';
+            messageIcon.innerHTML = '<i class="fas fa-user-circle"></i>';  // User icon
         }
 
+        // Create message content container
         const messageContent = document.createElement('div');
         messageContent.classList.add('message-content');
         
+        // Create message header with sender and timestamp
         const messageHeader = document.createElement('div');
         messageHeader.classList.add('message-header');
         messageHeader.innerHTML = `
@@ -54,13 +151,16 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         messageContent.appendChild(messageHeader);
 
+        // Create and append message body
         let element = document.createElement('p');
-        element.innerHTML = content;
+        element.innerHTML = content;  // Support HTML formatting in messages
         
         messageContent.appendChild(element);
         messageContainer.appendChild(messageIcon);
         messageContainer.appendChild(messageContent);
         chatWindow.appendChild(messageContainer);
+        
+        // Auto-scroll to show latest message
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 

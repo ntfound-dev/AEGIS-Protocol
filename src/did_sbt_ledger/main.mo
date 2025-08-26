@@ -1,50 +1,166 @@
-import Principal "mo:base/Principal";
-import Nat "mo:base/Nat";
-import Array "mo:base/Array";
-import Result "mo:base/Result";
-import Time "mo:base/Time";
+// =====================================================================
+// AEGIS Protocol - DID SBT Ledger Canister
+// =====================================================================
+// File: src/did_sbt_ledger/main.mo
+// Purpose: Decentralized Identity and Soulbound Token management
+// 
+// Architecture Overview:
+//   The DID SBT Ledger provides a comprehensive identity and reputation
+//   system for the AEGIS Protocol. It manages decentralized identities
+//   (DIDs) for all participants and issues non-transferable Soulbound
+//   Tokens (SBTs) to track participation and build reputation.
+// 
+// Key Responsibilities:
+//   - Register and manage decentralized identity profiles
+//   - Issue Soulbound Tokens for disaster response participation
+//   - Track contributor reputation and engagement history
+//   - Provide identity verification for governance participation
+//   - Maintain immutable records of community contributions
+// 
+// Decentralized Identity (DID) System:
+//   - Self-sovereign identity management for all participants
+//   - Cryptographically verifiable identity assertions
+//   - Privacy-preserving identity verification
+//   - Integration with IC Principal system for authentication
+// 
+// Soulbound Token (SBT) System:
+//   - Non-transferable badges representing achievements
+//   - Permanent record of disaster response participation
+//   - Reputation building through verified contributions
+//   - Integration with DAO voting systems for weighted governance
+// 
+// Security Features:
+//   - Principal-based identity verification
+//   - Authorized minter system for SBT issuance
+//   - Immutable badge records for reputation integrity
+//   - Admin-controlled authorization management
+// 
+// Integration Points:
+//   - Event DAOs: Request SBT minting for participants
+//   - Frontend: Display identity profiles and achievement badges
+//   - Governance: Provide reputation data for weighted voting
+// =====================================================================
 
+// Core Motoko standard library imports
+import Principal "mo:base/Principal"; // Principal ID management and verification
+import Nat "mo:base/Nat";            // Natural number utilities for ID generation
+import Array "mo:base/Array";        // Array operations for registry management
+import Result "mo:base/Result";      // Result type for error handling
+import Time "mo:base/Time";          // Time utilities for timestamping
+
+/// =====================================================================
+/// Actor: DID_SBT_Ledger
+/// =====================================================================
+/// Comprehensive identity and reputation management system
+/// 
+/// Initialization:
+///   - init_admin: Administrative principal for system management
+/// 
+/// Design Philosophy:
+///   The DID SBT Ledger implements Web3 identity principles where
+///   users maintain sovereign control over their identity while
+///   building verifiable reputation through Soulbound Tokens that
+///   cannot be transferred or sold.
+/// 
+/// Identity Management:
+///   - Self-registration of DID profiles
+///   - Cryptographic verification via IC Principals
+///   - Updatable profile information for flexibility
+///   - Privacy-preserving data storage
+/// 
+/// Reputation System:
+///   - SBTs represent immutable achievement records
+///   - Event-specific badges for disaster response participation
+///   - Cumulative reputation building over time
+///   - Integration with governance systems for weighted voting
+/// 
+/// Access Control:
+///   - Admin manages minter authorization
+///   - Authorized minters can issue SBTs
+///   - Self-service DID registration
+///   - Query functions for public data access
+/// =====================================================================
 persistent actor class DID_SBT_Ledger(init_admin : Principal) {
 
-    // ======================================================
-    // ================ TYPE DEFINITIONS ====================
-    // ======================================================
+    // ===================================================================
+    // TYPE DEFINITIONS AND DATA STRUCTURES
+    // ===================================================================
+    // Core data models for identity and reputation management
 
-    /// DID Profile: represents a digital identity profile
+    /// Decentralized Identity Profile
+    /// Represents a complete identity record for AEGIS Protocol participants
+    /// 
+    /// Fields:
+    ///   - owner: Cryptographic Principal ID (immutable)
+    ///   - name: Human-readable identifier (updatable)
+    ///   - entity_type: Classification (individual, organization, government)
+    ///   - contact_info: Communication details (updatable)
+    ///   - registration_date: Immutable timestamp of initial registration
+    /// 
+    /// Privacy Considerations:
+    ///   - Minimal personal data stored on-chain
+    ///   - Contact info can be encrypted or hashed
+    ///   - Public queries allow community verification
     public type DIDProfile = {
-        owner : Principal;
-        name : Text;
-        entity_type : Text;
-        contact_info : Text;
-        registration_date : Time.Time;
+        owner : Principal;           // Cryptographic identity anchor
+        name : Text;                 // Display name or organization title
+        entity_type : Text;          // Classification for participation rules
+        contact_info : Text;         // Communication and verification details
+        registration_date : Time.Time; // Immutable registration timestamp
     };
 
-    /// SBT (Soulbound Token): represents a non-transferable badge
+    /// Soulbound Token (Non-transferable Achievement Badge)
+    /// Represents permanent record of disaster response participation
+    /// 
+    /// Fields:
+    ///   - badge_id: Unique identifier for the specific SBT instance
+    ///   - issuer: Principal that authorized the badge issuance
+    ///   - event_name: Disaster event or achievement context
+    ///   - badge_type: Category of contribution or achievement
+    ///   - issued_at: Immutable timestamp of badge creation
+    /// 
+    /// Immutability:
+    ///   - Once issued, SBTs cannot be modified or transferred
+    ///   - Provides permanent, verifiable record of contribution
+    ///   - Builds cumulative reputation over time
     public type SBT = {
-        badge_id : Nat;
-        issuer : Principal;
-        event_name : Text;
-        badge_type : Text;
-        issued_at : Time.Time;
+        badge_id : Nat;              // Unique sequential identifier
+        issuer : Principal;          // Authorizing entity (DAO, admin, etc.)
+        event_name : Text;           // Context of achievement
+        badge_type : Text;           // Category of contribution
+        issued_at : Time.Time;       // Immutable creation timestamp
     };
 
-    // ======================================================
-    // ================ STATE VARIABLES =====================
-    // ======================================================
+    // ===================================================================
+    // STATE VARIABLES AND PERSISTENT STORAGE
+    // ===================================================================
+    // Core system state for identity and reputation tracking
 
-    /// Registry of all DID profiles (principal -> profile)
+    /// Decentralized Identity Registry
+    /// Maps Principal IDs to their associated DID profiles
+    /// Enables efficient lookup and verification of identity information
+    /// Storage: Array of tuples for simplicity (consider TrieMap for large scale)
     var did_registry : [(Principal, DIDProfile)] = [];
 
-    /// Ledger of all SBTs (principal -> list of badges)
+    /// Soulbound Token Ledger
+    /// Maps Principal IDs to their collection of earned SBTs
+    /// Maintains complete achievement history for reputation calculation
+    /// Storage: Array structure allows chronological ordering of badges
     var sbt_ledger : [(Principal, [SBT])] = [];
 
-    /// Unique counter for badge IDs
+    /// Badge ID Generator
+    /// Sequential counter ensuring unique identifiers for all SBTs
+    /// Incremented with each new badge to prevent collisions
     var next_badge_id : Nat = 0;
 
-    /// List of principals authorized to mint SBTs
+    /// Authorized Minter Registry
+    /// List of Principals authorized to issue SBTs
+    /// Typically includes Event DAOs and admin for different badge types
     var authorized_minters : [Principal] = [];
 
-    /// The main admin (set during actor initialization)
+    /// System Administrator
+    /// Principal with authority to manage minter authorization
+    /// Set during actor initialization and immutable thereafter
     var admin : Principal = init_admin;
 
     // ======================================================

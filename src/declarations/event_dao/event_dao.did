@@ -27,8 +27,17 @@ service : {
   donateAndVote: (amount: nat, proposalId: ProposalId, in_favor: bool) ->
    (text);
   get_all_proposals: () -> (vec ProposalInfo) query;
+  /// ------------------------------------------------------------------
+  /// Queries (read-only)
+  /// ------------------------------------------------------------------
   get_event_details: () -> (opt ValidatedEventData) query;
+  /// ------------------------------------------------------------------
+  /// Initialization
+  /// ------------------------------------------------------------------
   initialize: (args: InitArgs) -> (text);
+  /// ------------------------------------------------------------------
+  /// Mutations / public entrypoints
+  /// ------------------------------------------------------------------
   submit_proposal: (title: text, description: text, amount: nat, recipient:
    principal) -> (text);
 }

@@ -1,34 +1,95 @@
 #!/usr/bin/env bash
-# scripts/deploy-blockchain.sh
-# Deploy ICP canisters in local environment (WSL/Ubuntu).
-# Run from project root folder.
-set -euo pipefail
-IFS=$'\n\t'
 
-# ---------- Color configuration & helpers ----------
-YELLOW='\033[1;33m'
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-NC='\033[0m'
+# ======================================================================
+# AEGIS Protocol - Blockchain Deployment Script
+# ======================================================================
+# File: scripts/deploy-blockchain.sh
+# Purpose: Deploy all Internet Computer (IC) canisters for AEGIS Protocol
+# 
+# Deployment Architecture:
+#   - Local IC replica for development and testing
+#   - Multiple identity management for role-based testing
+#   - Canister initialization with proper dependencies
+#   - Automated principal extraction and logging
+# 
+# Canister System:
+#   - Event Factory: Central factory for disaster event DAOs
+#   - Event DAO: Individual disaster governance and fund management
+#   - Insurance Vault: Parametric insurance and treasury management
+#   - DID SBT Ledger: Decentralized identity and reputation system
+#   - Frontend: Static web assets served from IC canister
+# 
+# Multi-Identity Setup:
+#   - Admin: System administrator with full access
+#   - Funder: Provides initial capital to insurance vault
+#   - Organizer: Declares disaster events and coordinates response
+#   - Community Members: Vote on proposals and receive aid
+# 
+# Prerequisites:
+#   - DFX SDK installed and accessible in PATH
+#   - MOPS package manager for Motoko dependencies
+#   - OpenSSL for cryptographic operations
+# 
+# Usage: Run from project root directory
+#        ./scripts/deploy-blockchain.sh
+# 
+# Environment Variables:
+#   AUTO_INIT_PRINCIPAL: Set to auto-answer canister init prompts
+# ======================================================================
+# ======================================================================
+# SCRIPT SAFETY AND ERROR HANDLING
+# ======================================================================
+# Robust error handling to prevent partial deployments
+set -euo pipefail  # Exit on: error, undefined var, pipe failure
+IFS=$'\n\t'       # Secure Internal Field Separator
 
-log(){ echo -e "${YELLOW}[INFO]${NC} $*"; }
-ok(){ echo -e "${GREEN}[OK]${NC} $*"; }
-warn(){ echo -e "${RED}[WARN]${NC} $*"; }
+# ======================================================================
+# TERMINAL OUTPUT FORMATTING
+# ======================================================================
+# Color codes and logging functions for clear deployment feedback
 
-# ---------- Load DFX env ----------
+YELLOW='\033[1;33m'   # Information and progress messages
+GREEN='\033[0;32m'    # Success confirmations
+RED='\033[0;31m'      # Warnings and error messages
+NC='\033[0m'          # Reset to default color
+
+# Logging functions for consistent output formatting
+log(){ echo -e "${YELLOW}[INFO]${NC} $*"; }    # General information
+ok(){ echo -e "${GREEN}[OK]${NC} $*"; }       # Success messages
+warn(){ echo -e "${RED}[WARN]${NC} $*"; }     # Warning messages
+
+# ======================================================================
+# DFX ENVIRONMENT INITIALIZATION
+# ======================================================================
+# Load DFX environment variables and verify installation
+
 if [ -f "$HOME/.local/share/dfx/env" ]; then
   # shellcheck disable=SC1090
   source "$HOME/.local/share/dfx/env"
-  log "Loaded dfx environment from $HOME/.local/share/dfx/env"
+  log "DFX environment loaded from $HOME/.local/share/dfx/env"
+  log "DFX version: $(dfx --version 2>/dev/null || echo 'version check failed')"
 else
-  warn "DFX environment not found at $HOME/.local/share/dfx/env. Make sure dfx is installed."
+  warn "DFX environment not found at $HOME/.local/share/dfx/env"
+  warn "Please install DFX using: DFX_VERSION=0.28.0 sh -ci \"\$(curl -sSL https://internetcomputer.org/install.sh)\""
   exit 1
 fi
+
+# ======================================================================
+# PROJECT CONFIGURATION AND LOGGING
+# ======================================================================
+# Set up project paths and logging infrastructure
 
 PROJECT_ROOT="$(pwd)"
 LOG_FILE="${PROJECT_ROOT}/aegis_test_run.log"
 
-log "Starting Canister Deployment from project root: ${PROJECT_ROOT}"
+log "======================================================================"
+log "              AEGIS Protocol - Blockchain Deployment"
+log "======================================================================"
+log "🚀 Starting Internet Computer canister deployment..."
+log "📁 Project root: ${PROJECT_ROOT}"
+log "📝 Deployment log: ${LOG_FILE}"
+log "🕐 Deployment started at: $(date)"
+log "======================================================================"
 
 # ---------- Stop existing dfx/replica if any ----------
 if pgrep -f "dfx" >/dev/null 2>&1 || pgrep -f "replica" >/dev/null 2>&1; then

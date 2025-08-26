@@ -1,14 +1,26 @@
 {
   "name": "frontend",
   "version": "1.0.0",
+  "description": "AEGIS Protocol - Decentralized Disaster Response Frontend Interface. Interactive web application for disaster response simulation and blockchain interaction.",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "vite"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "disaster-response",
+    "blockchain",
+    "dao",
+    "internet-computer",
+    "decentralized",
+    "emergency",
+    "humanitarian",
+    "insurance",
+    "parametric",
+    "soulbound-tokens"
+  ],
+  "author": "AEGIS Protocol Team",
+  "license": "MIT",
   "devDependencies": {
     "vite": "^7.1.3"
   },
@@ -18,5 +30,17 @@
     "@dfinity/candid": "^3.2.2",
     "@dfinity/principal": "^3.2.2"
   },
-  "description": ""
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ntfound-dev/AEGIS-Protocol.git",
+    "directory": "frontend"
+  },
+  "bugs": {
+    "url": "https://github.com/ntfound-dev/AEGIS-Protocol/issues"
+  },
+  "homepage": "https://github.com/ntfound-dev/AEGIS-Protocol#readme"
 }
