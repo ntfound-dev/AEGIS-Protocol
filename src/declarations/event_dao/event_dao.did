@@ -23,6 +23,7 @@ type InitArgs =
    factory_principal: principal;
  };
 service : {
+  donate: (amount: nat) -> (text);
   donateAndVote: (amount: nat, proposalId: ProposalId, in_favor: bool) ->
    (text);
   get_all_proposals: () -> (vec ProposalInfo) query;

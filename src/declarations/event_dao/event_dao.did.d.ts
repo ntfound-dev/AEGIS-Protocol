@@ -24,6 +24,7 @@ export interface ValidatedEventData {
   'event_type' : string,
 }
 export interface _SERVICE {
+  'donate' : ActorMethod<[bigint], string>,
   'donateAndVote' : ActorMethod<[bigint, ProposalId, boolean], string>,
   'get_all_proposals' : ActorMethod<[], Array<ProposalInfo>>,
   'get_event_details' : ActorMethod<[], [] | [ValidatedEventData]>,

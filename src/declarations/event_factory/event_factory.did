@@ -6,6 +6,19 @@ type ValidatedEventData =
  };
 type EventFactory = 
  service {
+   /// ----------------------------------------------------------
+   /// Function: declare_event
+   /// Description:
+   ///   Declares a new event and deploys an EventDAO instance.
+   ///   Steps:
+   ///     1. Capture the factory's principal.
+   ///     2. Build initialization arguments for EventDAO.
+   ///     3. Initialize EventDAO with event metadata.
+   ///     4. Notify InsuranceVault to release initial funding.
+   ///     5. Return the EventDAO's principal if successful.
+   /// Error Handling:
+   ///   Returns a `#err` with the failure reason if any step fails.
+   /// ----------------------------------------------------------
    declare_event: (eventData: ValidatedEventData) -> (DeclareEventResult);
  };
 type DeclareEventResult = 
@@ -13,4 +26,12 @@ type DeclareEventResult =
    err: text;
    ok: principal;
  };
+/// ------------------------------------------------------------
+/// Actor: EventFactory
+/// Description:
+///   - Factory actor responsible for declaring new events.
+///   - Each event corresponds to an EventDAO instance,
+///     initialized with validated event metadata.
+///   - Also coordinates with InsuranceVault to release initial funding.
+/// ------------------------------------------------------------
 service : () -> EventFactory

@@ -21,6 +21,7 @@ export const idlFactory = ({ IDL }) => {
     'event_data' : ValidatedEventData,
   });
   return IDL.Service({
+    'donate' : IDL.Func([IDL.Nat], [IDL.Text], []),
     'donateAndVote' : IDL.Func([IDL.Nat, ProposalId, IDL.Bool], [IDL.Text], []),
     'get_all_proposals' : IDL.Func([], [IDL.Vec(ProposalInfo)], ['query']),
     'get_event_details' : IDL.Func(

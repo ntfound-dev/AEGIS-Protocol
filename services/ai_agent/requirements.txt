@@ -1,7 +1,7 @@
 uagents
 python-dotenv
 httpx
-ic-py
+ic-py==1.0.1
 aiofiles
 openai
 uvicorn[standard]

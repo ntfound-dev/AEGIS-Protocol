@@ -79,13 +79,13 @@ log "Admin principal: $ADMIN_PRINCIPAL"
 log "Removing previous identities (if exist): funder, organizer, community_a, community_b"
 dfx identity remove funder >/dev/null 2>&1 || true
 dfx identity remove organizer >/dev/null 2>&1 || true
-dfx identity remove community_a >/dev/null 2>&1 || true
-dfx identity remove community_b >/dev/null 2>&1 || true
+dfx identity remove Komunitas_peduli >/dev/null 2>&1 || true
+dfx identity remove Komunitas_korban >/dev/null 2>&1 || true
 log "Removal commands executed."
 
 # ---------- Create new identities (try non-interactive then fallback interactive) ----------
-log "Creating identities: funder, organizer, community_a, community_b"
-for ID in funder organizer community_a community_b; do
+log "Creating identities: funder, organizer, Komunitas_peduli, Komunitas_korban"
+for ID in funder organizer Komunitas_peduli Komunitas_korban; do
   if dfx identity new "$ID" --storage-mode=plaintext >/dev/null 2>&1; then
     log "Created identity '$ID' with --storage-mode=plaintext"
   else
@@ -107,14 +107,14 @@ get_principal_safe(){
 
 FUNDER_PRINCIPAL=$(get_principal_safe funder || true)
 ORGANIZER_PRINCIPAL=$(get_principal_safe organizer || true)
-COMMUNITY_A_PRINCIPAL=$(get_principal_safe community_a || true)
-COMMUNITY_B_PRINCIPAL=$(get_principal_safe community_b || true)
+KOMUNITAS_PEDULI_PRINCIPAL=$(get_principal_safe Komunitas_peduli || true)
+KOMUNITAS_KORBAN_PRINCIPAL=$(get_principal_safe Komunitas_korban || true)
 
 log "Principals (may be <none> if not created):"
 log "  funder:    ${FUNDER_PRINCIPAL:-<none>}"
 log "  organizer: ${ORGANIZER_PRINCIPAL:-<none>}"
-log "  community_a: ${COMMUNITY_A_PRINCIPAL:-<none>}"
-log "  community_b: ${COMMUNITY_B_PRINCIPAL:-<none>}"
+log "  Komunitas_peduli: ${KOMUNITAS_PEDULI_PRINCIPAL:-<none>}"
+log "  Komunitas_korban: ${KOMUNITAS_KORBAN_PRINCIPAL:-<none>}"
 
 # ---------- Deploy: interactive by default, or auto-answer if AUTO_INIT_PRINCIPAL set ----------
 if [ -n "${AUTO_INIT_PRINCIPAL:-}" ]; then
@@ -144,8 +144,8 @@ dfx generate
   echo "Admin/Default: $ADMIN_PRINCIPAL"
   echo "Funder:        ${FUNDER_PRINCIPAL:-<none>}"
   echo "Organizer:     ${ORGANIZER_PRINCIPAL:-<none>}"
-  echo "Community A:   ${COMMUNITY_A_PRINCIPAL:-<none>}"
-  echo "Community B:   ${COMMUNITY_B_PRINCIPAL:-<none>}"
+  echo "Komunitas_peduli:   ${KOMUNITAS_PEDULI_PRINCIPAL:-<none>}"
+  echo "Komunitas_korban:   ${KOMUNITAS_KORBAN_PRINCIPAL:-<none>}"
   echo "------------------------------------"
 } | tee -a "${LOG_FILE}"
 

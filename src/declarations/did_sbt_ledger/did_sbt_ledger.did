@@ -14,11 +14,50 @@ type Result =
  };
 type DID_SBT_Ledger = 
  service {
+   /// ------------------------------------------------------
+   /// Function : authorize_minter
+   /// Purpose  : Grant minting rights to a new principal
+   /// Params   :
+   ///   - minter_principal (Principal) -> Candidate minter
+   /// Return   : async Result<Text, Text> -> Ok message or Error
+   /// ------------------------------------------------------
    authorize_minter: (minter_principal: principal) -> (Result);
+   /// ------------------------------------------------------
+   /// Function : get_did
+   /// Purpose  : Retrieve the DID profile of a specific principal
+   /// Params   :
+   ///   - owner (Principal) -> Owner of the DID
+   /// Return   : async ?DIDProfile -> Some(profile) or null
+   /// ------------------------------------------------------
    get_did: (owner: principal) -> (opt DIDProfile) query;
+   /// ------------------------------------------------------
+   /// Function : get_sbts
+   /// Purpose  : Retrieve all SBTs owned by a specific principal
+   /// Params   :
+   ///   - owner (Principal) -> Owner of the badges
+   /// Return   : async [SBT] -> List of SBTs, empty if none exist
+   /// ------------------------------------------------------
    get_sbts: (owner: principal) -> (vec SBT) query;
+   /// ------------------------------------------------------
+   /// Function : mint_sbt
+   /// Purpose  : Mint a new SBT for a recipient
+   /// Params   :
+   ///   - recipient (Principal) -> The recipient of the badge
+   ///   - event_name (Text)     -> Name of the event
+   ///   - badge_type (Text)     -> Type of the badge
+   /// Return   : async Result<Text, Text> -> Ok message or Error
+   /// ------------------------------------------------------
    mint_sbt: (recipient: principal, event_name: text, badge_type: text) ->
     (Result);
+   /// ------------------------------------------------------
+   /// Function : register_did
+   /// Purpose  : Register or update the DID profile of the caller
+   /// Params   : 
+   ///   - name (Text)        -> Name of the entity
+   ///   - entity_type (Text) -> Type of entity
+   ///   - contact_info (Text)-> Contact details
+   /// Return   : async Text  -> Status message
+   /// ------------------------------------------------------
    register_did: (name: text, entity_type: text, contact_info: text) ->
     (text);
  };

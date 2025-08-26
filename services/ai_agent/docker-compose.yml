@@ -1,7 +1,7 @@
 services:
   validator-agent:
     build:
-      context: .
+      context: .   # <-- jangan pakai ./services/ai_agent
       dockerfile: Dockerfile
     command: python /app/agents/chatbotrepair/asi_one.py
     env_file:
@@ -12,9 +12,8 @@ services:
       - CANISTER_IDS_PATH=/app/dfx-local/canister_ids.json
       - IDENTITY_PEM_PATH=/app/identity.pem
     ports:
-      - "8002:8002"
+      - "8004:8004"
     restart: ${AGENT_RESTART_POLICY:-unless-stopped}
-    # SECURITY: Add resource limits and security options
     deploy:
       resources:
         limits:
@@ -72,9 +71,9 @@ services:
       - ACTION_AGENT_SEED=${ACTION_AGENT_SEED}
       - CANISTER_IDS_PATH=/app/dfx-local/canister_ids.json
       - IDENTITY_PEM_PATH=/app/identity.pem
-      - ICP_URL=${ICP_URL}
+      - ICP_URL=http://host.docker.internal:4943
     ports:
-      - "8004:8004"
+      - "8003:8003"
     depends_on:
       - validator-agent
       - oracle-agent

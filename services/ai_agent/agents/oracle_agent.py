@@ -1,7 +1,7 @@
 import os
 import asyncio
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
 import httpx
 
 from uagents import Agent, Context, Model # type: ignore
@@ -28,15 +28,16 @@ oracle_agent = Agent(
     name="oracle_agent_multi_source",
     port=8001,
     seed=ORACLE_SEED,
-    endpoint=["http://oracle-agent:8001/submit"],
+    endpoint=["http://oracle-agent-1:8001/submit"],
 )
 fund_agent_if_low(str(oracle_agent.wallet.address()))
-# REVISION: Return to ._logger to fix AttributeError
 oracle_agent._logger.info(f"Oracle Agent running with address: {oracle_agent.address}")
+
+# PERBAIKAN: Menambahkan set untuk melacak event yang sudah pernah dikirim
+SEEN_EVENT_IDS: Set[str] = set()
 
 # --- DATA PARSING FUNCTIONS ---
 def _parse_usgs_data(feature: Dict[str, Any]) -> Optional[RawEarthquakeData]:
-    """Parse one earthquake data from USGS format."""
     try:
         props: Dict[str, Any] = feature['properties']
         coords: List[float] = feature['geometry']['coordinates']
@@ -55,7 +56,6 @@ def _parse_usgs_data(feature: Dict[str, Any]) -> Optional[RawEarthquakeData]:
         return None
 
 def _parse_bmkg_data(gempa: Dict[str, Any]) -> Optional[RawEarthquakeData]:
-    """Parse earthquake data from BMKG format."""
     try:
         coords_str: str = gempa.get('Coordinates', '0,0')
         lat_str, lon_str = coords_str.split(',')
@@ -83,7 +83,6 @@ def _parse_bmkg_data(gempa: Dict[str, Any]) -> Optional[RawEarthquakeData]:
 ParserFunc = Callable[[Dict[str, Any]], Optional[RawEarthquakeData]]
 
 async def _fetch_from_source(ctx: Context, client: httpx.AsyncClient, url: str, parser: ParserFunc, source_name: str) -> List[RawEarthquakeData]:
-    """Fetch and parse data from one API source."""
     ctx.logger.info(f"Fetching data from {source_name} API...")
     try:
         response = await client.get(url, timeout=20.0)
@@ -130,8 +129,20 @@ async def fetch_and_send_data(ctx: Context):
         ctx.logger.info("No new valid earthquake data found.")
         return
 
-    ctx.logger.info(f"Found {len(all_earthquakes)} new events. Sending to validator...")
+    new_earthquakes_to_send = []
     for eq_data in all_earthquakes:
+        # Membuat ID unik untuk setiap event gempa
+        event_id = f"{eq_data.source}-{eq_data.timestamp}-{eq_data.magnitude:.2f}"
+        if event_id not in SEEN_EVENT_IDS:
+            new_earthquakes_to_send.append(eq_data)
+            SEEN_EVENT_IDS.add(event_id)
+
+    if not new_earthquakes_to_send:
+        ctx.logger.info("Data found, but all events have been sent previously.")
+        return
+        
+    ctx.logger.info(f"Found {len(new_earthquakes_to_send)} new unique events. Sending to validator...")
+    for eq_data in new_earthquakes_to_send:
         try:
             await ctx.send(VALIDATOR_AGENT_ADDRESS, eq_data)
             ctx.logger.info(f"Data from {eq_data.source} for '{eq_data.location}' successfully sent.")

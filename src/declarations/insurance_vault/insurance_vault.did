@@ -11,19 +11,21 @@ type Result =
  };
 type InsuranceVault = 
  service {
-   /// Menambahkan principal baru ke dalam daftar funder tambahan yang sah.
-   /// Hanya bisa dipanggil oleh admin canister.
+   /// Add a new funder (only callable by admin).
    add_funder: (funder_to_add: principal) -> (Result);
-   /// Menyetorkan dana ke dalam vault.
-   /// Hanya bisa dipanggil oleh funder yang sudah diotorisasi.
+   /// Fund the vault with liquidity (only by authorized funders).
    fund_vault: (amount: nat) -> (Result);
-   /// Mengembalikan daftar gabungan semua principal yang diizinkan untuk mendanai vault.
    get_authorized_funders: () -> (vec principal) query;
-   /// Mengembalikan jumlah total dana yang tersimpan di dalam vault.
    get_total_liquidity: () -> (nat) query;
-   /// Mencairkan dana awal dari vault ke sebuah event_dao yang baru.
-   /// Hanya bisa dipanggil oleh event_factory yang sah.
+   /// Release initial funding to a DAO (only callable by EventFactory).
    release_initial_funding: (dao_canister_id: principal, event_data:
     ValidatedEventData) -> (Result);
  };
+/// ------------------------------------------------------------
+/// Actor: InsuranceVault
+/// Description:
+///   - Manages liquidity to back DAOs created by EventFactory.
+///   - Handles authorized funders, vault funding, and event-based payouts.
+///   - Liquidity is released to EventDAO based on event severity.
+/// ------------------------------------------------------------
 service : (init_factory_id: principal, init_funder_id: principal, init_admin_id: principal) -> InsuranceVault

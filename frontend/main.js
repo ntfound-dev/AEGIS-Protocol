@@ -1,279 +1,290 @@
 // ======================================================
-// AEGIS PROTOCOL - main.js (REVISED)
+// AEGIS PROTOCOL - main.js
+// Simulasi Lengkap Semua Peran
 // ======================================================
 
-import { Actor, HttpAgent } from "@dfinity/agent";
-import { AuthClient } from "@dfinity/auth-client";
-import { Principal } from "@dfinity/principal";
+document.addEventListener('DOMContentLoaded', () => {
 
-// ===== CHANGES HERE =====
-import { idlFactory as did_sbt_ledger_idl, canisterId as did_sbt_ledger_id } from "@declarations/did_sbt_ledger";
-import { idlFactory as event_dao_idl } from "@declarations/event_dao";
-import { idlFactory as event_factory_idl, canisterId as event_factory_id } from "@declarations/event_factory";
-
-
-const host = "http://127.0.0.1:4943";
-
-//  retrieving disaster list from Oracle
-const ORACLE_API_URL = 'http://localhost:8001/disasters';
-
-//  sending proposal creation request to Validator
-const VALIDATOR_API_URL = 'http://localhost:8002/create_proposal';
-
-document.addEventListener('DOMContentLoaded', async () => {
-    // 1. DEFINING ALL UI ELEMENTS
+    // 1. UI ELEMENTS
     const loginBtn = document.getElementById('loginBtn');
     const loginStatusEl = document.getElementById('loginStatus');
-    const getProposalsBtn = document.getElementById('getProposalsBtn');
-    const donateVoteBtn = document.getElementById('donateVoteBtn');
     const chatWindow = document.getElementById('chatWindow');
     const chatInput = document.getElementById('chatInput');
     const chatSendBtn = document.getElementById('chatSendBtn');
-    const profileNameInput = document.getElementById('profileName');
-    const registerDidBtn = document.getElementById('registerDidBtn');
-    const getSbtsBtn = document.getElementById('getSbtsBtn');
 
-    //  APPLICATION STATE 
-    let authClient;
-    let agent;
-    let didLedgerActor;
-    let activeDaoPrincipal = null; 
-    let activeDaoActor = null;     
+    // 2. SIMULASI APLIKASI STATE
+    let currentRole = null;
+    let funderBalance = 0;
+    let funderToken = 0;
+    let activeDaoId = null;
+    let proposalList = [];
+    let isProfileRegistered = false;
+    let proposalApproved = false;
 
-    const agentChatUrl = 'http://localhost:8002/chat';
-    const agentSignalUrl = 'http://localhost:8002/verify_disaster';
+    const ROLES = {
+        ADMIN: 'Admin',
+        FUNDER: 'Funder',
+        ORGANIZER: 'Organizer',
+        KOMUNITAS_PEDULI: 'Komunitas Peduli',
+        KOMUNITAS_KORBAN: 'Komunitas Korban'
+    };
 
-    // === 3. HELPER DISPLAY FUNCTIONS ===
-    function displayMessage(content, sender, isJson = false) {
+    // 3. MESSAGE DISPLAY FUNCTION
+    function displayMessage(content, sender, isImage = false) {
         const messageContainer = document.createElement('div');
-        messageContainer.classList.add('message', sender === 'user' ? 'user-message' : 'agent-message');
-        let element;
-        if (isJson && typeof content !== 'string') {
-            element = document.createElement('pre');
-            element.textContent = JSON.stringify(content, (key, value) =>
-                typeof value === 'bigint' ? value.toString() : value, 2);
+        messageContainer.classList.add('message', sender.includes('Anda') ? 'user-message' : 'agent-message');
+        
+        const messageIcon = document.createElement('div');
+        messageIcon.classList.add('message-icon');
+        
+        if (sender === 'Aegis AI Assistant') {
+            messageIcon.innerHTML = '<i class="fas fa-robot"></i>';
         } else {
-            element = document.createElement('p');
-            element.textContent = content;
+            messageIcon.innerHTML = '<i class="fas fa-user-circle"></i>';
         }
-        messageContainer.appendChild(element);
+
+        const messageContent = document.createElement('div');
+        messageContent.classList.add('message-content');
+        
+        const messageHeader = document.createElement('div');
+        messageHeader.classList.add('message-header');
+        messageHeader.innerHTML = `
+            <span class="sender">${sender}</span>
+            <span class="timestamp">${new Date().toLocaleTimeString()}</span>
+        `;
+        messageContent.appendChild(messageHeader);
+
+        let element = document.createElement('p');
+        element.innerHTML = content;
+        
+        messageContent.appendChild(element);
+        messageContainer.appendChild(messageIcon);
+        messageContainer.appendChild(messageContent);
         chatWindow.appendChild(messageContainer);
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    //  MAIN INTERACTION LOGIC 
+    // 4. SIMULASI CHAT ENGINE
+    async function handleCommand(command, role) {
+        const lowerCommand = command.toLowerCase().trim();
+        let response = '';
 
-    //  Chat Logic 
-    async function handleChatMessage() {
-        const messageText = chatInput.value.trim();
-        if (!messageText) return;
-
-        displayMessage(messageText, 'user');
-        chatInput.value = '';
-        chatSendBtn.disabled = true;
-        displayMessage('Aegis is processing...', 'agent');
-
-        try {
-            if (messageText.toLowerCase().startsWith('send signal')) {
-                await handleSendSignalCommand(messageText);
-            } else {
-                await handleNormalChat(messageText);
-            }
-        } catch (error) {
-            chatWindow.removeChild(chatWindow.lastChild);
-            displayMessage(`Error: An error occurred. ${error.message}`, 'agent');
-        } finally {
-            chatSendBtn.disabled = false;
-            chatInput.focus();
+        // Deteksi perintah DFX
+        if (lowerCommand.startsWith('dfx')) {
+            response = handleDfxCommand(lowerCommand, role);
+        } else {
+            // Perintah natural
+            response = handleNaturalCommand(lowerCommand, role);
         }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        displayMessage(response, 'Aegis AI Assistant');
+    }
+
+    // Fungsi untuk memproses perintah natural
+    function handleNaturalCommand(lowerCommand, role) {
+        let response = '';
+        switch (role) {
+            case ROLES.ADMIN:
+                if (lowerCommand.includes('bersihkan') && lowerCommand.includes('deploy')) {
+                    response = `✅ Semua canister berhasil dideploy ulang. Sistem siap digunakan.`;
+                } else if (lowerCommand.includes('cek proposal') || lowerCommand.includes('setujui proposal')) {
+                    if (proposalList.length === 0) {
+                        proposalList.push({ id: 0, title: "Pengadaan 100 Tenda Darurat", votes_for: 1, votes_against: 0, amount: "1 juta" });
+                    }
+                    proposalApproved = true;
+                    const proposal = proposalList[0];
+                    let responsePart1 = `📊 Proposal #0 → votes_for = ${proposal.votes_for}, votes_against = ${proposal.votes_against}<br>Status: Disetujui ✅`;
+                    let responsePart2 = `✅ Proposal #0 dieksekusi.<br>💰 Dana ${proposal.amount} icp dicairkan dari vault ke Komunitas korban.<br>Status proposal: Selesai`;
+                    response = responsePart1 + '<br><br>' + responsePart2;
+                } else {
+                    response = `Mohon maaf, berikan saya perintah yang benar untuk penanggulangan bencana darurat.`;
+                }
+                break;
+            case ROLES.FUNDER:
+                if (lowerCommand.includes('invest dana vault')) {
+                    funderBalance = 100000000000000;
+                    funderToken = 10000;
+                    response = `✅ Vault terisi: 100T icp token<br>🎁 Sebagai funder Anda menerima 10.000 Token AEGIS.<br>Saldo token Funder = 10.000 AEGIS`;
+                } else {
+                    response = `Mohon maaf, berikan saya perintah yang benar untuk penanggulangan bencana darurat.`;
+                }
+                break;
+            case ROLES.ORGANIZER:
+                if (lowerCommand.includes('deklarasikan event bencana')) {
+                    activeDaoId = 'lz3um-vp777-77777-aaaba-cai';
+                    response = `✅ Event Gempa Haiti 7.2 dibuat.<br>DAO aktif dengan ID: ${activeDaoId}.`;
+                } else {
+                    response = `Mohon maaf, berikan saya perintah yang benar untuk penanggulangan bencana darurat.`;
+                }
+                break;
+            case ROLES.KOMUNITAS_KORBAN:
+                if (lowerCommand.includes('ajukan proposal bantuan')) {
+                    if (!activeDaoId) {
+                         activeDaoId = 'lz3um-vp777-77777-aaaba-cai';
+                    }
+                    if (proposalList.length === 0) {
+                        proposalList.push({ id: 0, title: "Pengadaan 100 Tenda Darurat", votes_for: 0, votes_against: 0, amount: "1 juta" });
+                    }
+                    response = `✅ Proposal #0 terdaftar Pengadaan 100 Tenda Darurat dan 1 juta token icp.`;
+                } else if (lowerCommand.includes('minta pencairan dana')) {
+                    if (proposalList.length === 0) {
+                        proposalList.push({ id: 0, title: "Pengadaan 100 Tenda Darurat", votes_for: 0, votes_against: 0, amount: "1 juta" });
+                    }
+                    
+                    if (proposalApproved) {
+                        response = `✅ Proposal #0 dieksekusi.<br>💰 Dana ${proposalList[0].amount} icp dicairkan dari vault ke Komunitas korban.<br>Status proposal: Selesai`;
+                    } else {
+                        response = `✅ Proposal #0<br>💰 menunggu persetujuan admin untuk pencairan`;
+                    }
+                } else {
+                    response = `Mohon maaf, berikan saya perintah yang benar untuk penanggulangan bencana darurat.`;
+                }
+                break;
+            case ROLES.KOMUNITAS_PEDULI:
+                if (lowerCommand.includes('daftar indentitas') || lowerCommand.includes('daftar profil')) {
+                    isProfileRegistered = true;
+                    response = `✅ Profil Komunitas Peduli berhasil terdaftar.`;
+                } else if (lowerCommand.includes('kirim donasi') || lowerCommand.includes('donateandvote')) {
+                    if (!activeDaoId) {
+                        activeDaoId = 'lz3um-vp777-77777-aaaba-cai';
+                    }
+                    if (proposalList.length === 0) {
+                        proposalList.push({ id: 0, title: "Pengadaan 100 Tenda Darurat", votes_for: 0, votes_against: 0, amount: "50 miliar" });
+                    }
+                    
+                    if (isProfileRegistered && proposalList.length > 0) {
+                        proposalList[0].votes_for += 1;
+                        response = `✅ Donasi terkirim 1 miliar<br>✅ Vote terekam<br>🎖️ SBT Donatur & Partisipasi untuk anda dan anda mendapatkan 1000 token aegis`;
+                    } else {
+                         response = `Gagal: Pastikan Anda sudah mendaftar profil dan ada proposal aktif.`;
+                    }
+                } else {
+                    response = `Mohon maaf, berikan saya perintah yang benar untuk penanggulangan bencana darurat.`;
+                }
+                break;
+            default:
+                response = `Silakan pilih peran Anda terlebih dahulu.`;
+        }
+        return response;
     }
     
-    async function handleNormalChat(messageText) {
-        const response = await fetch(agentChatUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: messageText })
-        });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const agentResponse = await response.json();
-        chatWindow.removeChild(chatWindow.lastChild);
-        displayMessage(agentResponse.reply, 'agent');
-    }
-
-    async function handleSendSignalCommand(messageText) {
-        let eventData;
-        try {
-            const parts = messageText.split(" ");
-            const location_index = parts.indexOf("earthquake") + 1;
-            const magnitude_index = parts.indexOf("magnitude") + 1;
-            const location = parts[location_index];
-            const magnitude = parseFloat(parts[magnitude_index]);
-            
-            if (!location || isNaN(magnitude)) throw new Error();
-
-            eventData = {
-                source: "Manual Chat Input",
-                magnitude: magnitude,
-                location: location.charAt(0).toUpperCase() + location.slice(1),
-                lat: 0.0, lon: 0.0,
-                timestamp: Math.floor(Date.now() / 1000)
-            };
-        } catch (e) {
-            throw new Error("Format of 'send signal' command not recognized. Example: send signal earthquake [location] magnitude [number]");
-        }
-
-        const response = await fetch(agentSignalUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(eventData)
-        });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const agentResponse = await response.json();
-        chatWindow.removeChild(chatWindow.lastChild);
-        displayMessage(`Signal Status: ${agentResponse.message}`, 'agent');
-        
-        const principalRegex = /([a-z0-9]{5}-){4}[a-z0-9]{3}/;
-        const match = agentResponse.message.match(principalRegex);
-        if (match) {
-            const newDaoPrincipalStr = match[0];
-            activeDaoPrincipal = Principal.fromText(newDaoPrincipalStr);
-            activeDaoActor = null; 
-            displayMessage(`Active DAO has been set to: ${newDaoPrincipalStr}. DAO Action buttons now work for this DAO.`, 'agent');
-            updateUIState();
-        }
-    }
-
-    //  Authentication Logic & Update UI State 
-    authClient = await AuthClient.create();
-    updateUIState();
-
-    async function handleLogin() {
-        displayMessage("Processing login request...", "agent");
-        if (await authClient.isAuthenticated()) {
-            await authClient.logout();
-            displayMessage("You have been logged out.", "agent");
+    // Fungsi untuk memproses perintah DFX
+    function handleDfxCommand(lowerCommand, role) {
+        let response = '';
+        if (lowerCommand.includes('dfx stop') || lowerCommand.includes('dfx deploy')) {
+            if (role === ROLES.ADMIN) {
+                response = `✅ Semua canister berhasil dideploy ulang. Sistem siap digunakan.`;
+            } else {
+                response = `Mohon maaf, hanya Admin yang dapat menjalankan perintah ini.`;
+            }
+        } else if (lowerCommand.includes('fund_vault')) {
+            if (role === ROLES.FUNDER) {
+                funderBalance = 100000000000000;
+                funderToken = 10000;
+                response = `✅ Vault terisi: 100T icp token<br>🎁 Sebagai funder Anda menerima 10.000 Token AEGIS.<br>Saldo token Funder = 10.000 AEGIS`;
+            } else {
+                response = `Mohon maaf, hanya Funder yang dapat menjalankan perintah ini.`;
+            }
+        } else if (lowerCommand.includes('declare_event')) {
+            if (role === ROLES.ORGANIZER) {
+                activeDaoId = 'lz3um-vp777-77777-aaaba-cai';
+                response = `✅ Event Gempa Haiti 7.2 dibuat.<br>DAO aktif dengan ID: ${activeDaoId}.`;
+            } else {
+                response = `Mohon maaf, hanya Organizer yang dapat menjalankan perintah ini.`;
+            }
+        } else if (lowerCommand.includes('submit_proposal')) {
+            if (role === ROLES.KOMUNITAS_KORBAN) {
+                if (!activeDaoId) {
+                     activeDaoId = 'lz3um-vp777-77777-aaaba-cai';
+                }
+                if (proposalList.length === 0) {
+                    proposalList.push({ id: 0, title: "Pengadaan 100 Tenda Darurat", votes_for: 0, votes_against: 0, amount: "1 juta" });
+                }
+                response = `✅ Proposal **#0** terdaftar Pengadaan 100 Tenda Darurat dan 1 juta token icp.`;
+            } else {
+                response = `Mohon maaf, Anda tidak memiliki izin atau tidak ada DAO aktif.`;
+            }
+        } else if (lowerCommand.includes('register_did')) {
+            if (role === ROLES.KOMUNITAS_PEDULI) {
+                isProfileRegistered = true;
+                response = `✅ Profil Komunitas Peduli berhasil terdaftar.`;
+            } else {
+                response = `Mohon maaf, hanya Komunitas Peduli yang dapat menjalankan perintah ini.`;
+            }
+        } else if (lowerCommand.includes('donateandvote')) {
+             if (role === ROLES.KOMUNITAS_PEDULI && isProfileRegistered && proposalList.length > 0) {
+                 proposalList[0].votes_for += 1;
+                 response = `✅ Donasi terkirim 1 miliar<br>✅ Vote terekam<br>🎖️ SBT Donatur & Partisipasi untuk anda dan anda mendapatkan 1000 token aegis`;
+             } else {
+                 response = `Mohon maaf, pastikan Anda sudah mendaftar profil dan ada proposal aktif.`;
+             }
+        } else if (lowerCommand.includes('get_all_proposals')) {
+             if (role === ROLES.ADMIN) {
+                 const proposal = proposalList[0];
+                 if (proposal && proposal.votes_for > 0) {
+                    proposalApproved = true;
+                    response = `📊 Proposal #0 → votes_for = ${proposal.votes_for}, votes_against = ${proposal.votes_against}<br>Status: Disetujui ✅`;
+                 } else if (proposal) {
+                     response = `📊 Proposal #0 → votes_for = 0, votes_against = 0<br>Status: Menunggu Vote...`;
+                 } else {
+                     response = `Tidak ada proposal aktif.`;
+                 }
+             } else {
+                 response = `Mohon maaf, hanya Admin yang dapat menjalankan perintah ini.`;
+             }
+        } else if (lowerCommand.includes('execute_proposal')) {
+            if (role === ROLES.KOMUNITAS_KORBAN) {
+                if (proposalList.length === 0) {
+                    proposalList.push({ id: 0, title: "Pengadaan 100 Tenda Darurat", votes_for: 0, votes_against: 0, amount: "1 juta" });
+                }
+                
+                if (proposalApproved) {
+                    response = `✅ Proposal #0 dieksekusi.<br>💰 Dana ${proposalList[0].amount} icp dicairkan dari vault ke Komunitas korban.<br>Status proposal: Selesai`;
+                } else {
+                     response = `✅ Proposal #0<br>💰 menunggu persetujuan admin untuk pencairan`;
+                }
+            } else {
+                response = `Mohon maaf, Anda tidak memiliki izin atau tidak ada proposal aktif.`;
+            }
         } else {
-            await authClient.login({
-                identityProvider: "https://identity.ic0.app",
-                onSuccess: () => {
-                    chatWindow.removeChild(chatWindow.lastChild);
-                    displayMessage("Login successful!", "agent");
-                    updateUIState();
-                },
-            });
+            response = `Perintah DFX tidak dikenali: "${command}".`;
         }
-        updateUIState();
+        return response;
     }
 
-    function updateUIState() {
-        const isAuthenticated = authClient.isAuthenticated();
-        const identity = authClient.getIdentity();
-        agent = new HttpAgent({ host, identity });
-        
-        didLedgerActor = Actor.createActor(did_sbt_ledger_idl, { agent, canisterId: did_sbt_ledger_id });
-
-        donateVoteBtn.disabled = !isAuthenticated || !activeDaoPrincipal;
-        registerDidBtn.disabled = !isAuthenticated;
-        getSbtsBtn.disabled = !isAuthenticated;
-        getProposalsBtn.disabled = !activeDaoPrincipal;
-
-        if (isAuthenticated) {
-            const principal = identity.getPrincipal().toText();
-            loginStatusEl.innerHTML = `Logged in as: <b>${principal.substring(0, 5)}...</b>`;
+    // 5. EVENT HANDLERS
+    loginBtn.addEventListener('click', () => {
+        const role = prompt("Pilih peran Anda (Admin, Funder, Organizer, Komunitas Peduli, Komunitas Korban):");
+        if (Object.values(ROLES).includes(role)) {
+            currentRole = role;
+            loginStatusEl.innerHTML = `Login sebagai: <b>${currentRole}</b>`;
             loginBtn.innerText = "Logout";
+            
+            if (currentRole === ROLES.ORGANIZER) {
+                displayMessage("Terdapat laporan bencana dari oracle gempa lokasi haiti gempa manigtudo 7.2", "Aegis AI Assistant");
+            } else {
+                displayMessage(`Selamat datang, ${currentRole}. Sistem siap melayani Anda.`, "Aegis AI Assistant");
+            }
         } else {
-            loginStatusEl.innerHTML = "<b>Not logged in</b>";
-            loginBtn.innerText = "Login with Internet Identity";
+            alert('Peran tidak valid.');
         }
-    }
-    
-    //  DID Profile & SBT Logic 
-    async function handleRegisterDid() {
-        const name = profileNameInput.value.trim();
-        if (!name) { alert("Profile name cannot be empty."); return; }
-        displayMessage(`Registering profile "${name}"...`, "agent");
-        try {
-            const response = await didLedgerActor.register_did(name, "Individual", "via-frontend");
-            displayMessage(`Success: ${response}`, "agent");
-            profileNameInput.value = '';
-        } catch(e) {
-            displayMessage(`Error registering profile: ${e.message}`, "agent");
+    });
+
+    chatSendBtn.addEventListener('click', () => {
+        const command = chatInput.value.trim();
+        if (command && currentRole) {
+            displayMessage(command, `Anda (${currentRole})`);
+            chatInput.value = '';
+            handleCommand(command, currentRole);
+        } else if (!currentRole) {
+            alert('Silakan login terlebih dahulu.');
         }
-    }
+    });
 
-    async function handleGetSbts() {
-        displayMessage("Searching for your SBTs...", "agent");
-        try {
-            const principal = authClient.getIdentity().getPrincipal();
-            const sbts = await didLedgerActor.get_sbts(principal);
-            if (sbts.length === 0) {
-                displayMessage("You don't have any SBTs yet.", "agent");
-            } else {
-                displayMessage("Your SBTs found:", "agent");
-                displayMessage(sbts, "agent", true);
-            }
-        } catch(e) {
-            displayMessage(`Error retrieving SBTs: ${e.message}`, "agent");
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            chatSendBtn.click();
         }
-    }
-
-    //  Dynamic DAO Interaction Logic 
-    function getActiveEventDaoActor() {
-        if (!activeDaoPrincipal) {
-            displayMessage("No active DAO. Create a new event through chat first.", "agent");
-            return null;
-        }
-        // Create new actor every time called to ensure identity (if login/logout) is up to date
-        const identity = authClient.getIdentity();
-        const dynAgent = new HttpAgent({ host, identity });
-        return Actor.createActor(event_dao_idl, { agent: dynAgent, canisterId: activeDaoPrincipal });
-    }
-
-    async function handleGetProposals() {
-        const daoActor = getActiveEventDaoActor();
-        if (!daoActor) return;
-        displayMessage(`Retrieving proposals from DAO ${activeDaoPrincipal.toText().substring(0,13)}...`, "agent");
-        try {
-            const proposals = await daoActor.get_all_proposals();
-            if (proposals.length === 0) {
-                displayMessage("No proposals have been created in this DAO yet.", "agent");
-            } else {
-                displayMessage(proposals, "agent", true);
-            }
-        } catch (error) {
-            displayMessage(`Error retrieving proposals: ${error.message}`, "agent");
-        }
-    }
-
-    async function handleDonateAndVote() {
-    if (!authClient.isAuthenticated()) { 
-        alert("You must be logged in!"); 
-        return; 
-    }
-    const daoActor = getActiveEventDaoActor();
-    if (!daoActor) return;
-    
-    displayMessage(`Sending donation to DAO ${activeDaoPrincipal.toText().substring(0,13)}...`, "agent");
-    
-    try {
-        
-        const amount = 100_000_000n; 
-        const proposalId = 0n;
-        const inFavor = true;
-        const response = await daoActor.donateAndVote(amount, proposalId, inFavor);
-        displayMessage(`Success: ${response}`, "agent");
-    } catch (error) {
-        displayMessage(`Error during donation/vote: ${error.message}`, "agent");
-    }
-}
-
-    //  CONNECTING ALL FUNCTIONS TO BUTTONS 
-    loginBtn.addEventListener("click", handleLogin);
-    chatSendBtn.addEventListener("click", handleChatMessage);
-    chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleChatMessage(); });
-    registerDidBtn.addEventListener("click", handleRegisterDid);
-    getSbtsBtn.addEventListener("click", handleGetSbts);
-    getProposalsBtn.addEventListener("click", handleGetProposals);
-    donateVoteBtn.addEventListener("click", handleDonateAndVote);
+    });
 });
